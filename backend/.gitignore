@@ -271,5 +271,15 @@ paket-files/
 __pycache__/
 *.pyc
 
+# SQLite
+*.db
+*.sqlite3
+*.sqlite
+*.db-journal
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+
+
 # Cake - Uncomment if you are using it
 # tools/

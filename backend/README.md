@@ -51,12 +51,10 @@
 
 ---
 
+
 ConcordCloud.backend/
 ├── API/                           # Web API层
 │   ├── Controllers/               # API控制器
-│   ├── Middlewares/               # 自定义中间件
-│   ├── HealthChecks/              # 健康检查
-│   ├── Extensions/                # 服务扩展
 │   └── Program.cs                 # 入口文件
 │
 ├── Core/                          # 业务核心层
@@ -69,14 +67,20 @@ ConcordCloud.backend/
 └── Infrastructure/                # 基础设施层
     ├── Database/                  # 数据访问
     │   ├── AppDbContext.cs        # EF上下文
-    │   └── Migrations/            # 数据库迁移
+    └── Migrations/            # 数据库迁移
     │
     ├── FileStorage/               # 文件存储
     │   ├── LocalFileStorage.cs    # 本地存储
-    │   ├── S3FileStorage.cs       # S3存储
-    │   └── FileUploadValidator.cs # 上传验证
-    │
-    ├── Identity/                  # 身份认证
-    ├── Caching/                   # 缓存服务
-    └── MessageQueue/              # 消息队列
+    │   └── S3FileStorage.cs       # S3存储
 
+### 开发
+
+### 创建数据库表
+```
+dotnet tool install --global dotnet-ef
+
+// 在 Infrastructure 项目目录下运行
+dotnet ef migrations add InitialCreate --startup-project ../ConcordCloud.API/ConcordCloud.API.csproj
+
+dotnet ef database update --startup-project ../ConcordCloud.API/ConcordCloud.API.csproj
+```

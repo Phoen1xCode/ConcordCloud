@@ -17,8 +17,9 @@ builder.Services.AddSwaggerGen(c =>
 
 // 注册数据库上下文
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=concordcloud.db"));
-
+{
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 // 注册IAppDbContext接口
 builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 

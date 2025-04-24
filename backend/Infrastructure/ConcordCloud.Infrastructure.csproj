@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Core\ConcordCloud.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Database\Migrations\" />
+  </ItemGroup>
+
 </Project> 

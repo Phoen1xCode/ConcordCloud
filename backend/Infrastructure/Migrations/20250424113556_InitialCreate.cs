@@ -1,10 +1,14 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
-namespace ConcordCloud.Infrastructure.Database.Migrations
+#nullable disable
+
+namespace ConcordCloud.Infrastructure.Migrations
 {
+    /// <inheritdoc />
     public partial class InitialCreate : Migration
     {
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -28,11 +32,11 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    FileName = table.Column<string>(type: "TEXT", nullable: false),
-                    OriginalFileName = table.Column<string>(type: "TEXT", nullable: false),
-                    ContentType = table.Column<string>(type: "TEXT", nullable: false),
+                    FileName = table.Column<string>(type: "TEXT", nullable: true),
+                    OriginalFileName = table.Column<string>(type: "TEXT", nullable: true),
+                    ContentType = table.Column<string>(type: "TEXT", nullable: true),
                     FileSize = table.Column<long>(type: "INTEGER", nullable: false),
-                    StoragePath = table.Column<string>(type: "TEXT", nullable: false),
+                    StoragePath = table.Column<string>(type: "TEXT", nullable: true),
                     UploadedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     OwnerId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
@@ -48,7 +52,7 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "FileShares",
+                name: "ShareFiles",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
@@ -59,9 +63,9 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FileShares", x => x.Id);
+                    table.PrimaryKey("PK_ShareFiles", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_FileShares_Files_FileId",
+                        name: "FK_ShareFiles_Files_FileId",
                         column: x => x.FileId,
                         principalTable: "Files",
                         principalColumn: "Id",
@@ -74,14 +78,14 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FileShares_FileId",
-                table: "FileShares",
+                name: "IX_ShareFiles_FileId",
+                table: "ShareFiles",
                 column: "FileId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_FileShares_ShareCode",
-                table: "FileShares",
+                name: "IX_ShareFiles_ShareCode",
+                table: "ShareFiles",
                 column: "ShareCode",
                 unique: true);
 
@@ -92,10 +96,11 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 unique: true);
         }
 
+        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "FileShares");
+                name: "ShareFiles");
 
             migrationBuilder.DropTable(
                 name: "Files");
@@ -104,4 +109,4 @@ namespace ConcordCloud.Infrastructure.Database.Migrations
                 name: "Users");
         }
     }
-} 
+}
