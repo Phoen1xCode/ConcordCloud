@@ -7,7 +7,7 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["ConcordCloud.API/ConcordCloud.API.csproj", "ConcordCloud.API/"]
 COPY ["ConcordCloud.Core/ConcordCloud.Core.csproj", "ConcordCloud.Core/"]
-COPY ["ConcordCloud.Data/ConcordCloud.Data.csproj", "ConcordCloud.Data/"]
+COPY ["ConcordCloud.Infrastructure/ConcordCloud.Infrastructure.csproj", "ConcordCloud.Infrastructure/"]
 RUN dotnet restore "ConcordCloud.API/ConcordCloud.API.csproj"
 COPY . .
 WORKDIR "/src/ConcordCloud.API"
