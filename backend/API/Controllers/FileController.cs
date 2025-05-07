@@ -34,10 +34,10 @@ namespace ConcordCloud.API.Controllers
         {
             if (!TryGetUserId(out var userId))
             {
-                return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
             var files = await _fileService.GetUserFilesAsync(userId);
-            return Ok(new { success = true, files });
+            return Ok(ApiResponse.Ok(files));
         }
 
         [HttpPost("upload")]
@@ -48,14 +48,14 @@ namespace ConcordCloud.API.Controllers
         {
             if (file == null || file.Length == 0)
             {
-                return BadRequest(new { success = false, message = "请选择要上传的文件" });
+                return BadRequest(ApiResponse.Error("Please select a file to upload"));
             }
-             // Add file size check here if needed, although RequestSizeLimit helps
+            // Add file size check here if needed, although RequestSizeLimit helps
             // if (file.Length > YOUR_MAX_SIZE_IN_BYTES) { ... }
 
             if (!TryGetUserId(out var userId))
             {
-                 return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
 
             using (var stream = file.OpenReadStream())
@@ -70,10 +70,10 @@ namespace ConcordCloud.API.Controllers
                 if (!result.Success)
                 {
                     // Consider logging the error message here
-                    return BadRequest(new { success = false, message = result.Message });
+                    return BadRequest(ApiResponse.Error(result.Message));
                 }
 
-                return Ok(new { success = true, message = result.Message, file = result.File });
+                return Ok(ApiResponse.Ok(result.File, result.Message));
             }
         }
 
@@ -81,19 +81,19 @@ namespace ConcordCloud.API.Controllers
         [Authorize]
         public async Task<IActionResult> DeleteFile(Guid id)
         {
-             if (!TryGetUserId(out var userId))
+            if (!TryGetUserId(out var userId))
             {
-                 return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
             var (success, message) = await _fileService.DeleteFileAsync(userId, id);
 
             if (!success)
             {
-                 // Consider returning NotFound if the message indicates file not found vs. permission issue
-                return BadRequest(new { success, message });
+                // Consider returning NotFound if the message indicates file not found vs. permission issue
+                return BadRequest(ApiResponse.Error(message));
             }
 
-            return Ok(new { success, message });
+            return Ok(ApiResponse.Ok(message));
         }
 
         [HttpPut("rename")]
@@ -102,21 +102,21 @@ namespace ConcordCloud.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ApiResponse.Error("Invalid request data"));
             }
 
             if (!TryGetUserId(out var userId))
             {
-                 return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
             var (success, message, file) = await _fileService.RenameFileAsync(userId, renameDto);
 
             if (!success)
             {
-                return BadRequest(new { success, message });
+                return BadRequest(ApiResponse.Error(message));
             }
 
-            return Ok(new { success, message, file });
+            return Ok(ApiResponse.Ok(file, message));
         }
 
         [HttpPost("share")]
@@ -125,37 +125,37 @@ namespace ConcordCloud.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(ApiResponse.Error("Invalid request data"));
             }
 
-             if (!TryGetUserId(out var userId))
+            if (!TryGetUserId(out var userId))
             {
-                 return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
             var result = await _fileService.CreateFileShareAsync(userId, shareDto);
 
             if (result == null) // Assuming null indicates failure (e.g., file not found or permission denied)
             {
-                return BadRequest(new { success = false, message = "创建分享失败" });
+                return BadRequest(ApiResponse.Error("Failed to create share"));
             }
 
-            return Ok(new { success = true, message = "创建分享成功", share = result });
+            return Ok(ApiResponse.Ok(result, "Share created successfully"));
         }
 
         [HttpGet("download/{id}")]
         [Authorize]
         public async Task<IActionResult> DownloadFile(Guid id)
         {
-             if (!TryGetUserId(out var userId))
+            if (!TryGetUserId(out var userId))
             {
-                 return BadRequest(new { success = false, message = "无效的用户标识符" });
+                return BadRequest(ApiResponse.Error("Invalid user identifier"));
             }
             var (success, message, fileStream, fileName, contentType) = await _fileService.DownloadFileByIdAsync(userId, id);
 
             if (!success)
             {
                 // Consider returning NotFound if appropriate
-                return BadRequest(new { success, message });
+                return BadRequest(ApiResponse.Error(message));
             }
 
             // IMPORTANT: Ensure the fileStream is disposed correctly after the response is sent.
@@ -166,17 +166,17 @@ namespace ConcordCloud.API.Controllers
         [HttpGet("shared/{shareCode}")]
         public async Task<IActionResult> DownloadSharedFile(string shareCode)
         {
-             if (string.IsNullOrWhiteSpace(shareCode))
-             {
-                 return BadRequest(new { success = false, message = "分享码不能为空" });
-             }
+            if (string.IsNullOrWhiteSpace(shareCode))
+            {
+                return BadRequest(ApiResponse.Error("Share code cannot be empty"));
+            }
 
             var (success, message, fileStream, fileName, contentType) = await _fileService.DownloadFileByShareCodeAsync(shareCode);
 
             if (!success)
             {
-                 // Consider returning NotFound or Gone if the link expired/invalid
-                return BadRequest(new { success, message });
+                // Consider returning NotFound or Gone if the link expired/invalid
+                return BadRequest(ApiResponse.Error(message));
             }
 
             return File(fileStream, contentType, fileName);
