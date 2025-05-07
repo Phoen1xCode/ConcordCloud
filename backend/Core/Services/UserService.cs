@@ -88,10 +88,7 @@ namespace ConcordCloud.Core.Services
             });
         }
 
-    
-
-
-
+        // get user by id
         public async Task<UserDto?> GetUserByIdAsync(Guid userId)
         {
             var user = await _dbContext.Users.FindAsync(userId);
@@ -108,12 +105,5 @@ namespace ConcordCloud.Core.Services
                 CreatedAt = user.CreatedAt
             };
         }
-
-        public async Task<bool> IsAdmin(Guid userId)
-        {
-            var user = await _dbContext.Users.FindAsync(userId);
-            return user != null && user.Role == UserRole.Admin;
-        }
-
     }
 } 
