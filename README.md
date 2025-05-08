@@ -1,5 +1,7 @@
 # ConcordCloud
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Phoen1xCode/ConcordCloud)
+
 ## 产品介绍
 轻量级文件上传、下载和共享的Web网页解决方案
 
