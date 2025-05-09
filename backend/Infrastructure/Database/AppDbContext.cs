@@ -14,6 +14,7 @@ namespace ConcordCloud.Infrastructure.Database
         public DbSet<User> Users { get; set; }
         public DbSet<UserFile> Files { get; set; }
         public DbSet<ShareFile> ShareFiles  { get; set; }
+        public DbSet<Admin> Admins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -40,6 +41,11 @@ namespace ConcordCloud.Infrastructure.Database
                 
             modelBuilder.Entity<ShareFile>()
                 .HasIndex(s => s.ShareCode)
+                .IsUnique();
+                
+            // Admin 配置
+            modelBuilder.Entity<Admin>()
+                .HasIndex(a => a.Email)
                 .IsUnique();
         }
     }

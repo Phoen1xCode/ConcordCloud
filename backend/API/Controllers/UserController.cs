@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ConcordCloud.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/user")]
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -37,6 +37,7 @@ public class UserController : ControllerBase
 
         return Ok(ApiResponse.Ok(user, message));
     }
+
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] UserLoginDto loginDto)

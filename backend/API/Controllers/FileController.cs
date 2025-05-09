@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ConcordCloud.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/file")]
 public class FileController : ControllerBase
 {
     private readonly IFileService _fileService;
