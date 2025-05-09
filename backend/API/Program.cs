@@ -10,6 +10,8 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// develop example
+
 // 添加服务到容器
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
