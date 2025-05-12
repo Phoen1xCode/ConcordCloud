@@ -1,7 +1,4 @@
 # ConcordCloud
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Phoen1xCode/ConcordCloud)
-
 <a href="https://deepwiki.com/Phoen1xCode/ConcordCloud"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 
 ## 产品介绍
