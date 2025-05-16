@@ -104,23 +104,122 @@
           </div>
           
           <div v-if="!selectedFile" class="mt-6 text-center">
-            <router-link to="/login" class="text-indigo-400 hover:text-indigo-300 transition duration-300">
-              返回登录
+            <router-link to="/send" class="text-indigo-400 hover:text-indigo-300 transition duration-300 flex items-center justify-center">
+              去上传文件
+              <UploadIcon class="w-4 h-4 ml-1" />
             </router-link>
           </div>
         </div>
+        
+        <div class="px-8 py-4 bg-opacity-50 flex justify-between items-center"
+          :class="[isDarkMode ? 'bg-gray-800' : 'bg-gray-100']">
+          <span class="text-sm flex items-center" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-800']">
+            <ShieldCheckIcon class="w-4 h-4 mr-1 text-green-400" />
+            安全加密
+          </span>
+          <button @click="toggleDrawer" class="text-sm hover:text-indigo-300 transition duration-300 flex items-center"
+            :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']">
+            文件管理
+            <ClipboardListIcon class="w-4 h-4 ml-1" />
+          </button>
+        </div>
       </div>
     </div>
+    
+    <!-- 抽屉式文件管理 -->
+    <transition name="drawer">
+      <div v-if="showDrawer"
+        class="fixed inset-y-0 right-0 w-full sm:w-120 bg-opacity-70 backdrop-filter backdrop-blur-xl shadow-2xl z-50 overflow-hidden flex flex-col"
+        :class="[isDarkMode ? 'bg-gray-900' : 'bg-white']">
+        <div class="flex justify-between items-center p-6 border-b"
+          :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+          <h3 class="text-2xl font-bold" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
+            文件管理
+          </h3>
+          <button @click="toggleDrawer" class="hover:text-white transition duration-300"
+            :class="[isDarkMode ? 'text-gray-400' : 'text-gray-800']">
+            <XIcon class="w-6 h-6" />
+          </button>
+        </div>
+        <div class="flex-grow overflow-y-auto p-6">
+          <div v-if="isLoadingFiles" class="flex justify-center items-center h-full">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2" 
+              :class="[isDarkMode ? 'border-indigo-400' : 'border-indigo-600']"></div>
+          </div>
+          <div v-else-if="!isLoggedIn" class="flex flex-col items-center justify-center h-full">
+            <LockIcon class="w-16 h-16 mb-4" :class="[isDarkMode ? 'text-gray-500' : 'text-gray-400']" />
+            <p class="text-center" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+              请先登录以查看您的文件
+            </p>
+            <router-link to="/login" 
+              class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300">
+              去登录
+            </router-link>
+          </div>
+          <div v-else-if="userFiles.length === 0" class="flex flex-col items-center justify-center h-full">
+            <FileIcon class="w-16 h-16 mb-4" :class="[isDarkMode ? 'text-gray-500' : 'text-gray-400']" />
+            <p class="text-center" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+              你还没有上传任何文件
+            </p>
+          </div>
+          <transition-group name="list" tag="div" class="space-y-4">
+            <div v-for="file in userFiles" :key="file.id"
+              class="bg-opacity-50 rounded-lg p-4 flex items-center shadow-md hover:shadow-lg transition duration-300 transform hover:scale-102"
+              :class="[isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-white']">
+              <div class="flex-shrink-0 mr-4">
+                <FileIcon class="w-10 h-10" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
+              </div>
+              <div class="flex-grow min-w-0 mr-4">
+                <div class="flex items-center">
+                  <p class="font-medium text-lg truncate" 
+                    :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
+                    {{ file.fileName }}
+                  </p>
+                </div>
+                <p class="text-sm truncate" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                  {{ formatFileSize(file.fileSize) }} · {{ formatDate(file.uploadedAt) }}
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <button @click="downloadFileById(file.id, file.fileName)"
+                  class="p-2 rounded-full hover:bg-opacity-20 transition duration-300" :class="[
+                    isDarkMode
+                      ? 'hover:bg-blue-400 text-blue-400'
+                      : 'hover:bg-blue-100 text-blue-600'
+                  ]" :title="'下载'">
+                  <DownloadIcon class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </transition-group>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 右下角退出登录按钮 -->
+    <button @click="logout" 
+      class="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+      :class="[isDarkMode ? 'bg-gray-800 text-red-400 hover:bg-gray-700' : 'bg-white text-red-600 hover:bg-gray-100']"
+      v-if="isLoggedIn">
+      <span>退出登录</span>
+      <LogOutIcon class="w-5 h-5" />
+    </button>
   </div>
 </template>
 
 <script setup>
-import { ref, inject, computed } from 'vue'
+import { ref, inject, computed, onMounted } from 'vue'
 import { 
   FileIcon, 
   DownloadIcon,
   CalendarIcon,
-  HardDriveIcon
+  HardDriveIcon,
+  ClipboardListIcon,
+  XIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  LogOutIcon,
+  UploadIcon
 } from 'lucide-vue-next'
 import { useRouter, useRoute } from 'vue-router'
 import { useAlertStore } from '@/stores/alertStore'
@@ -138,6 +237,12 @@ const isInputFocused = ref(false)
 const error = ref(false)
 const selectedFile = ref(null)
 const isDownloading = ref(false)
+
+// 文件管理相关
+const showDrawer = ref(false)
+const userFiles = ref([])
+const isLoadingFiles = ref(false)
+const isLoggedIn = computed(() => localStorage.getItem('isLoggedIn') === 'true')
 
 // 初始化时检查URL参数
 const initFromQuery = () => {
@@ -251,6 +356,47 @@ const downloadFile = async () => {
   }
 }
 
+// 通过ID下载文件
+const downloadFileById = async (fileId, fileName) => {
+  if (!isLoggedIn.value) {
+    alertStore.showAlert('请先登录', 'error')
+    return
+  }
+  
+  try {
+    alertStore.showAlert('开始下载文件...', 'info')
+    console.log(`Downloading file by ID: ${fileId}`)
+    
+    const response = await axios({
+      url: `https://localhost:5001/api/File/download/${fileId}`,
+      method: 'GET',
+      responseType: 'blob',
+      withCredentials: true
+    })
+    
+    // 创建Blob链接并触发下载
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    
+    alertStore.showAlert('文件下载成功', 'success')
+  } catch (err) {
+    console.error('通过ID下载文件失败:', err)
+    if (err.response && err.response.status === 401) {
+      alertStore.showAlert('下载需要登录，请先登录', 'error')
+      router.push('/login')
+    } else if (err.message && err.message.includes('Network Error')) {
+      alertStore.showAlert('网络错误，请检查后端API是否正在运行', 'error')
+    } else {
+      alertStore.showAlert('文件下载失败，请稍后重试', 'error')
+    }
+  }
+}
+
 // 重置视图
 const resetView = () => {
   selectedFile.value = null
@@ -258,8 +404,75 @@ const resetView = () => {
   error.value = false
 }
 
+// 切换文件管理抽屉
+const toggleDrawer = () => {
+  showDrawer.value = !showDrawer.value
+  if (showDrawer.value && isLoggedIn.value) {
+    fetchUserFiles()
+  }
+}
+
+// 获取用户文件列表
+const fetchUserFiles = async () => {
+  if (!isLoggedIn.value) return
+  
+  try {
+    isLoadingFiles.value = true
+    const response = await axios.get('https://localhost:5001/api/File', {
+      withCredentials: true
+    })
+    
+    if (response.data && response.data.success) {
+      userFiles.value = response.data.files
+    } else {
+      alertStore.showAlert('获取文件列表失败', 'error')
+    }
+  } catch (error) {
+    console.error('获取文件列表出错:', error)
+    if (error.response && error.response.status === 401) {
+      alertStore.showAlert('获取文件列表需要登录', 'error')
+    } else {
+      alertStore.showAlert('获取文件列表失败', 'error')
+    }
+  } finally {
+    isLoadingFiles.value = false
+  }
+}
+
+// 用户登出
+const logout = async () => {
+  console.log('Logout function triggered')
+  alertStore.showAlert('正在退出登录...', 'info')
+  
+  try {
+    // 确保axios默认设置包含凭据
+    axios.defaults.withCredentials = true;
+    
+    // 调用登出API
+    console.log('Calling logout API at: https://localhost:5001/api/User/logout')
+    await axios.post('https://localhost:5001/api/User/logout', {}, {
+      withCredentials: true // 确保发送认证Cookie
+    })
+    
+    // 清除本地登录状态标志
+    localStorage.removeItem('token')
+    localStorage.removeItem('isLoggedIn')
+    alertStore.showAlert('已成功退出登录', 'success')
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+    // 即使API调用失败，也清除本地登录状态
+    localStorage.removeItem('token')
+    localStorage.removeItem('isLoggedIn')
+    alertStore.showAlert('登出过程中发生错误，但已清除本地登录状态', 'warning')
+    router.push('/login')
+  }
+}
+
 // 在组件挂载时执行初始化
-initFromQuery()
+onMounted(() => {
+  initFromQuery()
+})
 </script>
 
 <style scoped>
@@ -313,5 +526,34 @@ initFromQuery()
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.5);
+}
+
+/* Drawer animation */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  transform: translateX(100%);
+}
+
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+@media (min-width: 640px) {
+  .sm\:w-120 {
+    width: 30rem;
+    /* 480px */
+  }
 }
 </style>

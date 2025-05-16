@@ -15,154 +15,41 @@
           {{ config.name }}
         </h2>
         <form @submit.prevent="handleSubmit" class="space-y-8">
-          <!-- 发送类型选择 -->
-          <div class="flex justify-center space-x-4 mb-6">
-            <button type="button" @click="sendType = 'file'" :class="[
-              'px-4 py-2 rounded-lg',
-              sendType === 'file' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'
-            ]">
-              发送文件
-            </button>
-            <button type="button" @click="sendType = 'text'" :class="[
-              'px-4 py-2 rounded-lg',
-              sendType === 'text' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'
-            ]">
-              发送文本
-            </button>
-            <!-- <button
-              type="button"
-              @click="sendType = 'collect'"
+          <!-- 文件上传区域 -->
+          <div class="grid grid-cols-1 gap-8">
+            <div
+              class="rounded-xl p-8 flex flex-col items-center justify-center border-2 border-dashed transition-all duration-300 group cursor-pointer relative"
               :class="[
-                'px-4 py-2 rounded-lg',
-                sendType === 'collect' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300'
-              ]"
-            >
-              收集文件
-            </button> -->
-          </div>
-
-          <transition name="fade" mode="out-in">
-            <div v-if="sendType === 'file'" key="file" class="grid grid-cols-1 gap-8">
-              <!-- 文件上传区域 -->
-              <div
-                class="rounded-xl p-8 flex flex-col items-center justify-center border-2 border-dashed transition-all duration-300 group cursor-pointer relative"
-                :class="[
-                  isDarkMode
-                    ? 'bg-gray-800 bg-opacity-50 border-gray-600 hover:border-indigo-500'
-                    : 'bg-gray-100 border-gray-300 hover:border-indigo-500'
-                ]" @click="triggerFileUpload" @dragover.prevent @drop.prevent="handleFileDrop">
-                <input id="file-upload" type="file" class="hidden" @change="handleFileUpload" ref="fileInput" />
-                <div class="absolute inset-0 w-full h-full" v-if="uploadProgress > 0">
-                  <BorderProgressBar :progress="uploadProgress" />
-                </div>
-                <UploadCloudIcon :class="[
-                  'w-16 h-16 transition-colors duration-300',
-                  isDarkMode
-                    ? 'text-gray-400 group-hover:text-indigo-400'
-                    : 'text-gray-600 group-hover:text-indigo-600'
-                ]" />
-                <p :class="[
-                  'mt-4 text-sm transition-colors duration-300 w-full text-center',
-                  isDarkMode
-                    ? 'text-gray-400 group-hover:text-indigo-400'
-                    : 'text-gray-600 group-hover:text-indigo-600'
-                ]">
-                  <span class="block truncate">
-                    {{ selectedFile ? selectedFile.name : '点击或拖放文件到此处上传' }}
-                  </span>
-                </p>
-                <p :class="['mt-2 text-xs', isDarkMode ? 'text-gray-500' : 'text-gray-400']">
-                  支持各种常见格式，最大{{ getStorageUnit(config.uploadSize) }}
-                </p>
-              </div>
-            </div>
-            <div v-else key="text" class="grid grid-cols-1 gap-8">
-              <!-- 文本输入区域 -->
-              <div v-if="sendType === 'text'" class="flex flex-col">
-                <textarea id="text-content" v-model="textContent" rows="7" :class="[
-                  'flex-grow px-4 py-3 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-300 resize-none',
-                  isDarkMode
-                    ? 'bg-gray-800 bg-opacity-50 text-white'
-                    : 'bg-white text-gray-900 border border-gray-300'
-                ]" placeholder="在此输入要发送的文本..."></textarea>
-              </div>
-            </div>
-          </transition>
-          <!-- 过期方式选择 -->
-          <div class="flex flex-col space-y-3">
-            <label :class="['text-sm font-medium', isDarkMode ? 'text-gray-300' : 'text-gray-700']">
-              过期时间
-            </label>
-            <div class="relative flex-grow group">
-              <div :class="[
-                'relative h-11 rounded-xl border transition-all duration-300',
                 isDarkMode
-                  ? 'bg-gray-800/50 border-gray-700/50 group-hover:border-gray-600'
-                  : 'bg-white border-gray-200 group-hover:border-gray-300'
-              ]">
-                <template v-if="expirationMethod !== 'forever'">
-                  <input v-model="expirationValue" type="number" :placeholder="getPlaceholder()" min="1" :class="[
-                    'w-full h-full px-4 pr-32 rounded-xl placeholder-gray-400 transition-all duration-300',
-                    'focus:outline-none focus:ring-2 focus:ring-offset-0',
-                    '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
-                    'bg-transparent',
-                    isDarkMode
-                      ? 'text-gray-100 focus:ring-indigo-500/70 placeholder-gray-500'
-                      : 'text-gray-900 focus:ring-indigo-500/50 placeholder-gray-400'
-                  ]" />
-                  <div class="absolute right-24 top-0 h-full flex flex-col border-l"
-                    :class="[isDarkMode ? 'border-gray-700/50' : 'border-gray-200']">
-                    <button type="button" @click="incrementValue(1)"
-                      class="flex-1 px-2 flex items-center justify-center transition-all duration-200" :class="[
-                        isDarkMode
-                          ? 'hover:bg-gray-700/50 text-gray-400 hover:text-gray-200'
-                          : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700'
-                      ]">
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                      </svg>
-                    </button>
-                    <button type="button" @click="incrementValue(-1)"
-                      class="flex-1 px-2 flex items-center justify-center transition-all duration-200" :class="[
-                        isDarkMode
-                          ? 'hover:bg-gray-700/50 text-gray-400 hover:text-gray-200'
-                          : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700'
-                      ]">
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </button>
-                  </div>
-                </template>
-                <select v-model="expirationMethod" :class="[
-                  'absolute right-0 top-0 h-full appearance-none cursor-pointer',
-                  'focus:outline-none focus:ring-2 focus:ring-offset-0',
-                  expirationMethod === 'forever' ? 'w-full px-4' : 'w-24 pl-3 pr-8 border-l',
-                  isDarkMode
-                    ? 'text-gray-100 border-gray-700/50 focus:ring-indigo-500/70 bg-gray-800/50'
-                    : 'text-gray-900 border-gray-200 focus:ring-indigo-500/50 bg-white'
-                ]">
-                  <option v-for="item in config.expireStyle" :value="item" :key="item" :class="[
-                    isDarkMode
-                      ? 'bg-gray-800 text-gray-100'
-                      : 'bg-white text-gray-900'
-                  ]">
-                    {{ getUnit(item) }}
-                  </option>
-                </select>
-                <div class="absolute pointer-events-none" :class="[
-                  expirationMethod === 'forever' ? 'right-3' : 'right-2',
-                  'top-1/2 -translate-y-1/2'
-                ]">
-                  <svg class="w-4 h-4 transition-colors duration-300"
-                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  ? 'bg-gray-800 bg-opacity-50 border-gray-600 hover:border-indigo-500'
+                  : 'bg-gray-100 border-gray-300 hover:border-indigo-500'
+              ]" @click="triggerFileUpload" @dragover.prevent @drop.prevent="handleFileDrop">
+              <input id="file-upload" type="file" class="hidden" @change="handleFileUpload" ref="fileInput" />
+              <div class="absolute inset-0 w-full h-full" v-if="uploadProgress > 0">
+                <BorderProgressBar :progress="uploadProgress" />
               </div>
+              <UploadCloudIcon :class="[
+                'w-16 h-16 transition-colors duration-300',
+                isDarkMode
+                  ? 'text-gray-400 group-hover:text-indigo-400'
+                  : 'text-gray-600 group-hover:text-indigo-600'
+              ]" />
+              <p :class="[
+                'mt-4 text-sm transition-colors duration-300 w-full text-center',
+                isDarkMode
+                  ? 'text-gray-400 group-hover:text-indigo-400'
+                  : 'text-gray-600 group-hover:text-indigo-600'
+              ]">
+                <span class="block truncate">
+                  {{ selectedUploadFile ? selectedUploadFile.name : '点击或拖放文件到此处上传' }}
+                </span>
+              </p>
+              <p :class="['mt-2 text-xs', isDarkMode ? 'text-gray-500' : 'text-gray-400']">
+                支持各种常见格式，最大{{ getStorageUnit(config.uploadSize) }}
+              </p>
             </div>
           </div>
+          
           <!-- 提交按钮 -->
           <button type="submit"
             class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold py-4 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg relative overflow-hidden group">
@@ -189,13 +76,13 @@
         </span>
         <button @click="toggleDrawer" class="text-sm hover:text-indigo-300 transition duration-300 flex items-center"
           :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']">
-          发件记录
+          文件管理
           <ClipboardListIcon class="w-4 h-4 ml-1" />
         </button>
       </div>
     </div>
 
-    <!-- 抽屉式发件记录 -->
+    <!-- 抽屉式文件管理 -->
     <transition name="drawer">
       <div v-if="showDrawer"
         class="fixed inset-y-0 right-0 w-full sm:w-120 bg-opacity-70 backdrop-filter backdrop-blur-xl shadow-2xl z-50 overflow-hidden flex flex-col"
@@ -203,7 +90,7 @@
         <div class="flex justify-between items-center p-6 border-b"
           :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
           <h3 class="text-2xl font-bold" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
-            发件记录
+            文件管理
           </h3>
           <button @click="toggleDrawer" class="hover:text-white transition duration-300"
             :class="[isDarkMode ? 'text-gray-400' : 'text-gray-800']">
@@ -211,42 +98,55 @@
           </button>
         </div>
         <div class="flex-grow overflow-y-auto p-6">
+          <div v-if="isLoadingFiles" class="flex justify-center items-center h-full">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2" 
+              :class="[isDarkMode ? 'border-indigo-400' : 'border-indigo-600']"></div>
+          </div>
+          <div v-else-if="userFiles.length === 0" class="flex flex-col items-center justify-center h-full">
+            <FileIcon class="w-16 h-16 mb-4" :class="[isDarkMode ? 'text-gray-500' : 'text-gray-400']" />
+            <p class="text-center" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+              你还没有上传任何文件
+            </p>
+          </div>
           <transition-group name="list" tag="div" class="space-y-4">
-            <div v-for="record in sendRecords" :key="record.id"
+            <div v-for="file in userFiles" :key="file.id"
               class="bg-opacity-50 rounded-lg p-4 flex items-center shadow-md hover:shadow-lg transition duration-300 transform hover:scale-102"
               :class="[isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-white']">
               <div class="flex-shrink-0 mr-4">
                 <FileIcon class="w-10 h-10" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
               </div>
               <div class="flex-grow min-w-0 mr-4">
-                <p class="font-medium text-lg truncate" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
-                  {{ record.filename ? record.filename : 'Text' }}
-                </p>
+                <div class="flex items-center">
+                  <p class="font-medium text-lg truncate" 
+                    :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
+                    {{ file.fileName }}
+                  </p>
+                </div>
                 <p class="text-sm truncate" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
-                  {{ record.date }} · {{ record.size }}
+                  {{ formatFileSize(file.fileSize) }} · {{ formatDate(file.uploadedAt) }}
                 </p>
               </div>
               <div class="flex-shrink-0 flex space-x-2">
-                <button @click="copyRetrieveLink(record.retrieveCode)"
+                <button @click="shareFile(file)"
                   class="p-2 rounded-full hover:bg-opacity-20 transition duration-300" :class="[
                     isDarkMode
                       ? 'hover:bg-blue-400 text-blue-400'
                       : 'hover:bg-blue-100 text-blue-600'
-                  ]">
-                  <ClipboardCopyIcon class="w-5 h-5" />
+                  ]" :title="'分享'">
+                  <Share2Icon class="w-5 h-5" />
                 </button>
-                <button @click="viewDetails(record)"
+                <button @click="startRenaming(file)"
                   class="p-2 rounded-full hover:bg-opacity-20 transition duration-300" :class="[
                     isDarkMode
                       ? 'hover:bg-green-400 text-green-400'
                       : 'hover:bg-green-100 text-green-600'
-                  ]">
-                  <EyeIcon class="w-5 h-5" />
+                  ]" :title="'重命名'">
+                  <PencilIcon class="w-5 h-5" />
                 </button>
-                <button @click="deleteRecord(record.id)"
+                <button @click="confirmDeleteFile(file)"
                   class="p-2 rounded-full hover:bg-opacity-20 transition duration-300" :class="[
                     isDarkMode ? 'hover:bg-red-400 text-red-400' : 'hover:bg-red-100 text-red-600'
-                  ]">
+                  ]" :title="'删除'">
                   <TrashIcon class="w-5 h-5" />
                 </button>
               </div>
@@ -256,20 +156,20 @@
       </div>
     </transition>
 
-    <!-- 记录详情弹窗 -->
+    <!-- 文件分享弹窗 -->
     <transition name="fade">
-      <div v-if="selectedRecord"
+      <div v-if="showShareDialog"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
         <div
-          class="w-full max-w-2xl rounded-2xl shadow-2xl transform transition-all duration-300 ease-out overflow-hidden"
+          class="w-full max-w-md rounded-2xl shadow-2xl transform transition-all duration-300 ease-out overflow-hidden"
           :class="[isDarkMode ? 'bg-gray-900 bg-opacity-70' : 'bg-white bg-opacity-95']">
           <!-- 顶部标题栏 -->
           <div class="px-4 sm:px-6 py-3 sm:py-4 border-b" :class="[isDarkMode ? 'border-gray-800' : 'border-gray-100']">
             <div class="flex items-center justify-between">
               <h3 class="text-lg sm:text-xl font-semibold" :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
-                文件详情
+                创建文件分享
               </h3>
-              <button @click="selectedRecord = null"
+              <button @click="closeShareDialog"
                 class="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <XIcon class="w-4 h-4 sm:w-5 sm:h-5" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
               </button>
@@ -277,108 +177,176 @@
           </div>
 
           <!-- 主要内容区域 -->
-          <div class="p-4 sm:p-6">
-            <!-- 文件信息卡片 -->
-            <div class="rounded-xl p-3 sm:p-4 mb-4 sm:mb-6"
+          <div class="p-4 sm:p-6 space-y-4">
+            <!-- 文件信息 -->
+            <div class="rounded-xl p-3 sm:p-4"
               :class="[isDarkMode ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-50 bg-opacity-95']">
-              <div class="flex items-center mb-3 sm:mb-4">
-                <div class="p-2 sm:p-3 rounded-lg" :class="[isDarkMode ? 'bg-gray-800' : 'bg-white']">
+              <div class="flex items-center">
+                <div class="p-2 sm:p-3 rounded-lg" :class="[isDarkMode ? 'bg-gray-700' : 'bg-white']">
                   <FileIcon class="w-5 h-5 sm:w-6 sm:h-6"
                     :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
                 </div>
                 <div class="ml-3 sm:ml-4 min-w-0 flex-1">
                   <h4 class="font-medium text-sm sm:text-base truncate"
                     :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
-                    {{ selectedRecord.filename }}
+                    {{ selectedFile ? selectedFile.fileName : '' }}
                   </h4>
                   <p class="text-xs sm:text-sm truncate" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
-                    {{ selectedRecord.size }} · {{ selectedRecord.date }}
+                    {{ selectedFile ? formatFileSize(selectedFile.fileSize) : '' }} · 
+                    {{ selectedFile ? formatDate(selectedFile.uploadedAt) : '' }}
                   </p>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div class="flex items-center min-w-0">
-                  <ClockIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0"
-                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
-                  <span class="text-xs sm:text-sm truncate" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-                    {{ selectedRecord.expiration }}
-                  </span>
-                </div>
-                <div class="flex items-center min-w-0">
-                  <ShieldCheckIcon class="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0"
-                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
-                  <span class="text-xs sm:text-sm truncate" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-                    安全加密
-                  </span>
                 </div>
               </div>
             </div>
 
-            <!-- 取件码和二维码区域 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <!-- 左侧取件码 -->
-              <div class="space-y-3 sm:space-y-4">
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 sm:p-5 text-white">
-                  <div class="flex items-center justify-between mb-3 sm:mb-4">
-                    <h4 class="font-medium text-sm sm:text-base">取件码</h4>
-                    <button @click="copyRetrieveCode(selectedRecord.retrieveCode)"
-                      class="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors">
-                      <ClipboardCopyIcon class="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  </div>
-                  <p class="text-2xl sm:text-3xl font-bold tracking-wider text-center break-all">{{
-                    selectedRecord.retrieveCode }}
-                  </p>
+            <!-- 过期设置 - 改为日期选择器 -->
+            <div class="flex flex-col space-y-3">
+              <label :class="['text-sm font-medium', isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                过期时间
+              </label>
+              <div class="relative flex-grow group">
+                <div :class="[
+                  'relative h-11 rounded-xl border transition-all duration-300',
+                  isDarkMode
+                    ? 'bg-gray-800/50 border-gray-700/50 group-hover:border-gray-600'
+                    : 'bg-white border-gray-200 group-hover:border-gray-300'
+                ]">
+                  <input 
+                    type="date" 
+                    v-model="expirationDate" 
+                    :min="minExpirationDate"
+                    :max="maxExpirationDate"
+                    :class="[
+                      'w-full h-full px-4 rounded-xl transition-all duration-300',
+                      'focus:outline-none focus:ring-2 focus:ring-offset-0',
+                      'bg-transparent',
+                      isDarkMode
+                        ? 'text-gray-100 focus:ring-indigo-500/70 placeholder-gray-500'
+                        : 'text-gray-900 focus:ring-indigo-500/50 placeholder-gray-400'
+                    ]" />
                 </div>
-
-                <div class="rounded-xl p-3 sm:p-4"
-                  :class="[isDarkMode ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-50 bg-opacity-95']">
-                  <div class="flex items-center justify-between mb-2 sm:mb-3">
-                    <h4 class="font-medium text-sm sm:text-base flex items-center min-w-0"
-                      :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
-                      <TerminalIcon class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-indigo-500 flex-shrink-0" />
-                      <span class="truncate">wget下载</span>
-                    </h4>
-                    <button @click="copyWgetCommand(selectedRecord.retrieveCode,selectedRecord.filename)"
-                      class="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0">
-                      <ClipboardCopyIcon class="w-4 h-4 sm:w-5 sm:h-5"
-                        :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
-                    </button>
-                  </div>
-                  <p class="text-xs sm:text-sm font-mono break-all line-clamp-2"
-                    :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-                    点击复制wget命令
-                  </p>
-                </div>
-              </div>
-
-              <!-- 右侧二维码 -->
-              <div class="rounded-xl p-4 sm:p-5 flex flex-col items-center"
-                :class="[isDarkMode ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-50 bg-opacity-95']">
-                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm mb-3 sm:mb-4">
-                  <QRCode :value="getQRCodeValue(selectedRecord)" :size="140" level="M"
-                    class="sm:w-[160px] sm:h-[160px]" />
-                </div>
-                <p class="text-xs sm:text-sm truncate max-w-full"
-                  :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
-                  扫描二维码快速取件
-                </p>
               </div>
             </div>
+
+            <!-- 生成分享按钮 -->
+            <button @click="createFileShare" 
+              class="w-full mt-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg relative overflow-hidden group"
+              :disabled="isCreatingShare">
+              <span class="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+              <span class="relative z-10 flex items-center justify-center text-lg">
+                <span v-if="isCreatingShare">生成中...</span>
+                <span v-else>生成分享链接</span>
+              </span>
+            </button>
           </div>
 
-          <!-- 底部操作栏 -->
-          <div class="px-4 sm:px-6 py-3 sm:py-4 border-t" :class="[isDarkMode ? 'border-gray-800' : 'border-gray-100']">
-            <button @click="copyRetrieveLink(selectedRecord.retrieveCode)"
-              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base font-medium transition-colors">
-              复制取件链接
+          <!-- 分享结果区域 -->
+          <div v-if="shareResult" class="px-4 sm:px-6 py-4 sm:py-5 bg-opacity-50 space-y-4"
+              :class="[isDarkMode ? 'bg-gray-800' : 'bg-gray-50']">
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-4 sm:p-5 text-white">
+              <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <h4 class="font-medium text-sm sm:text-base">取件码</h4>
+                <button @click="copyRetrieveCode(shareResult.shareCode)"
+                  class="p-1.5 sm:p-2 rounded-full hover:bg-white/10 transition-colors">
+                  <ClipboardCopyIcon class="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+              <p class="text-2xl sm:text-3xl font-bold tracking-wider text-center break-all">
+                {{ shareResult.shareCode }}
+              </p>
+            </div>
+            
+            <div class="flex items-center space-x-2 text-sm" 
+              :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
+              <ClockIcon class="w-4 h-4" />
+              <span>有效期至: {{ formatDate(shareResult.expiresAt) }}</span>
+            </div>
+            
+            <button @click="copyRetrieveLink(shareResult.shareCode)"
+              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
+              <span>复制取件链接</span>
+              <ClipboardCopyIcon class="w-4 h-4 ml-2" />
             </button>
           </div>
         </div>
       </div>
     </transition>
-     <!-- 右下角退出登录按钮 -->
-     <button @click="logout" 
+
+    <!-- 删除确认弹窗 -->
+    <transition name="fade">
+      <div v-if="showDeleteConfirm"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
+          <h3 class="text-lg font-medium mb-4" :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
+            确认删除
+          </h3>
+          <p class="mb-6" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
+            确定要删除文件 "{{ fileToDelete?.fileName }}" 吗？此操作无法撤销。
+          </p>
+          <div class="flex justify-end space-x-3">
+            <button @click="showDeleteConfirm = false"
+              class="px-4 py-2 rounded-md border transition-colors"
+              :class="[isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 
+                'border-gray-300 text-gray-700 hover:bg-gray-100']">
+              取消
+            </button>
+            <button @click="deleteFile"
+              class="px-4 py-2 rounded-md bg-red-500 text-white hover:bg-red-600 transition-colors">
+              删除
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 文件重命名弹窗 -->
+    <transition name="fade">
+      <div v-if="showRenameDialog"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
+          <h3 class="text-lg font-medium mb-4" :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
+            重命名文件
+          </h3>
+          
+          <div class="mb-4">
+            <div class="flex items-center mb-3">
+              <FileIcon class="w-6 h-6 mr-2" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
+              <span :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
+                {{ fileToRename?.fileName }}
+              </span>
+            </div>
+            
+            <label class="block text-sm mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+              新文件名
+            </label>
+            <input 
+              type="text" 
+              v-model="newFileName" 
+              class="w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2"
+              :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500' : 
+                'bg-white border-gray-300 text-gray-800 focus:ring-indigo-500']"
+              placeholder="输入新文件名"
+            />
+          </div>
+          
+          <div class="flex justify-end space-x-3">
+            <button @click="closeRenameDialog"
+              class="px-4 py-2 rounded-md border transition-colors"
+              :class="[isDarkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 
+                'border-gray-300 text-gray-700 hover:bg-gray-100']">
+              取消
+            </button>
+            <button @click="confirmRename"
+              class="px-4 py-2 rounded-md bg-indigo-500 text-white hover:bg-indigo-600 transition-colors">
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 右下角退出登录按钮 -->
+    <button @click="logout" 
       class="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
       :class="[isDarkMode ? 'bg-gray-800 text-red-400 hover:bg-gray-700' : 'bg-white text-red-600 hover:bg-gray-100']">
       <span>退出登录</span>
@@ -397,18 +365,16 @@ import {
   TrashIcon,
   FileIcon,
   ClockIcon,
-  EyeIcon,
   ShieldCheckIcon,
   ClipboardCopyIcon,
-  TerminalIcon,
-  LogOutIcon
+  LogOutIcon,
+  Share2Icon,
+  PencilIcon
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
-import QRCode from 'qrcode.vue'
 import { useFileDataStore } from '@/stores/fileData'
-import api from '@/utils/api'
-import { copyRetrieveLink, copyRetrieveCode, copyWgetCommand } from '@/utils/clipboard'
+import { copyRetrieveLink, copyRetrieveCode } from '@/utils/clipboard'
 import { getStorageUnit } from '@/utils/convert'
 import axios from 'axios'
 
@@ -418,21 +384,46 @@ const router = useRouter()
 const isDarkMode = inject('isDarkMode')
 const fileDataStore = useFileDataStore()
 
-const sendType = ref('file')
-const selectedFile = ref<File | null>(null)
-const textContent = ref('')
+const selectedUploadFile = ref<File | null>(null)
+const selectedFile = ref<FileItem | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
-const expirationMethod = ref('day')
-const expirationValue = ref('1')
 const uploadProgress = ref(0)
 const showDrawer = ref(false)
-const selectedRecord = ref<any>(null)
 import { useAlertStore } from '@/stores/alertStore'
 
 const alertStore = useAlertStore()
 const sendRecords = computed(() => fileDataStore.shareData)
 
 const fileHash = ref('')
+const baseUrl = window.location.origin + '/#/'
+
+// 文件管理相关
+const isLoadingFiles = ref(false)
+const userFiles = ref<FileItem[]>([])
+const showShareDialog = ref(false)
+const showDeleteConfirm = ref(false)
+const fileToDelete = ref<FileItem | null>(null)
+const shareResult = ref<ShareResult | null>(null)
+const isCreatingShare = ref(false)
+
+// 重命名弹窗相关
+const showRenameDialog = ref(false)
+const fileToRename = ref<FileItem | null>(null)
+const newFileName = ref('')
+
+// 添加日期选择器相关变量
+const expirationDate = ref('')
+const minExpirationDate = computed(() => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+})
+const maxExpirationDate = computed(() => {
+  const today = new Date()
+  const maxDays = config.max_save_seconds ? Math.floor(config.max_save_seconds / 86400) : 1825
+  const maxDate = new Date(today)
+  maxDate.setDate(today.getDate() + maxDays)
+  return maxDate.toISOString().split('T')[0]
+})
 
 const triggerFileUpload = () => {
   fileInput.value?.click()
@@ -442,7 +433,7 @@ const handleFileUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
     const file = target.files[0]
-    selectedFile.value = file
+    selectedUploadFile.value = file
     if (!checkUpload()) return
     fileHash.value = await calculateFileHash(file)
     console.log(fileHash.value)
@@ -452,12 +443,16 @@ const handleFileUpload = async (event: Event) => {
 const handleFileDrop = async (event: DragEvent) => {
   if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
     const file = event.dataTransfer.files[0]
-    selectedFile.value = file
+    selectedUploadFile.value = file
     if (!checkUpload()) return
     fileHash.value = await calculateFileHash(file)
   }
 }
 
+/**
+ * 处理粘贴事件，允许用户直接从剪贴板粘贴图片文件
+ * @param event 剪贴板事件对象
+ */
 const handlePaste = async (event: ClipboardEvent) => {
   const items = event.clipboardData?.items
   if (!items) return
@@ -474,7 +469,7 @@ const handlePaste = async (event: ClipboardEvent) => {
 
         // 检查文件类型
         if (file.type.startsWith('image/')) {
-          selectedFile.value = file
+          selectedUploadFile.value = file
           if (!checkUpload()) return
 
           try {
@@ -490,15 +485,14 @@ const handlePaste = async (event: ClipboardEvent) => {
         break
       }
     }
-    else {
-      sendType.value = 'text'
-      items[0].getAsString((str: string) => {
-        textContent.value += str
-      })
-    }
   }
 }
 
+/**
+ * 计算文件的SHA-256哈希值，如果不支持则使用备用哈希方法
+ * @param file 要计算哈希的文件对象
+ * @returns 返回文件的哈希值字符串
+ */
 const calculateFileHash = async (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const chunkSize = 2097152 // 保持 2MB 的切片大小用于计算哈希
@@ -544,7 +538,11 @@ const calculateFileHash = async (file: File): Promise<string> => {
   })
 }
 
-// 生成替代哈希的函数
+/**
+ * 生成基于文件属性的备用哈希值，当无法使用标准加密API时使用
+ * @param file 要生成哈希的文件对象
+ * @returns 返回基于文件名、大小和修改时间的哈希字符串
+ */
 const generateFallbackHash = (file: File): string => {
   // 使用文件名、大小和最后修改时间生成一个简单的哈希
   const fileInfo = `${file.name}-${file.size}-${file.lastModified}`
@@ -558,102 +556,17 @@ const generateFallbackHash = (file: File): string => {
   return Math.abs(hash).toString(16).padStart(64, '0')
 }
 
-const getPlaceholder = (value: string = expirationMethod.value) => {
-  switch (value) {
-    case 'day':
-      return '输入天数'
-    case 'hour':
-      return '输入小时数'
-    case 'minute':
-      return '输入分钟数'
-    case 'count':
-      return '输入查看次数'
-    case 'forever':
-      return '永久'
-    default:
-      return '输入值'
-  }
-}
-
-const getUnit = (value: string = expirationMethod.value) => {
-  switch (value) {
-    case 'day':
-      return '天'
-    case 'hour':
-      return '小时'
-    case 'minute':
-      return '分钟'
-    case 'count':
-      return '次'
-    case 'forever':
-      return '永久'
-    default:
-      return ''
-  }
-}
-
+/**
+ * 处理表单提交，上传选择的文件
+ */
 const handleSubmit = async () => {
-  if (sendType.value === 'file' && !selectedFile.value) {
+  if (!selectedUploadFile.value) {
     alertStore.showAlert('请选择要上传的文件', 'error')
-    return
-  }
-  if (sendType.value === 'text' && !textContent.value.trim()) {
-    alertStore.showAlert('请输入要发送的文本', 'error')
-    return
-  }
-  if (expirationMethod.value !== 'forever' && !expirationValue.value) {
-    alertStore.showAlert('请输入过期值', 'error')
-    return
-  }
-
-  // 添加过期时间验证
-  if (!checkExpirationTime(expirationMethod.value, expirationValue.value)) {
-    const maxDays = Math.floor(config.max_save_seconds / 86400)
-    alertStore.showAlert(`过期时间不能超过${maxDays}天`, 'error')
     return
   }
 
   try {
-    let response: any
-
-    if (sendType.value === 'file') {
-      // 直接上传文件，不使用切片上传
-      response = await handleDirectFileUpload(selectedFile.value!)
-    } else {
-      // 文本分享方式
-      alertStore.showAlert('文本分享功能暂不可用', 'warning')
-      return
-    }
-
-    if (response && response.code === 200) {
-      const retrieveCode = response.detail.code
-      const fileName = response.detail.name
-      // 添加新的发送记录
-      const newRecord = {
-        id: Date.now(),
-        filename: fileName,
-        date: new Date().toISOString().split('T')[0],
-        size: `${(selectedFile.value!.size / (1024 * 1024)).toFixed(1)} MB`,
-        expiration: response.detail.expiresAt 
-          ? `有效期至 ${new Date(response.detail.expiresAt).toLocaleDateString()}`
-          : `${expirationValue.value}${getUnit()}后过期`,
-        retrieveCode: retrieveCode
-      }
-      fileDataStore.addShareData(newRecord)
-
-      // 显示发送成功消息
-      alertStore.showAlert(`文件上传成功！分享码：${retrieveCode}`, 'success')
-      // 重置表单 - 只重置文件和文本内容,保留过期信息
-      selectedFile.value = null
-      textContent.value = ''
-      uploadProgress.value = 0
-      // 显示详情
-      selectedRecord.value = newRecord
-      // 自动复制取件码链接
-      await copyRetrieveLink(retrieveCode)
-    } else {
-      throw new Error('服务器响应异常')
-    }
+    await handleDirectFileUpload(selectedUploadFile.value!)
   } catch (error: any) {
     console.error('发送失败:', error)
     if (error.response?.data?.message) {
@@ -668,92 +581,97 @@ const handleSubmit = async () => {
   }
 }
 
-// 移除切片上传函数，使用直接上传
-const handleDirectFileUpload = async (file: File) => {
+// 定义响应类型以解决类型检查问题
+interface UploadResponse {
+  code: number;
+  detail: {
+    code: string;
+    name: string;
+    expiresAt?: string;
+    message?: string;
+  };
+}
+
+// 定义文件类型接口
+interface FileItem {
+  id: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  uploadedAt: string;
+  hasActiveShare: boolean;
+}
+
+// 定义分享结果接口
+interface ShareResult {
+  shareCode: string;
+  fileName: string;
+  expiresAt: string;
+}
+
+/**
+ * 执行文件上传操作
+ * @param file 要上传的文件对象
+ */
+const handleDirectFileUpload = async (file: File): Promise<void> => {
   try {
-    // 检查登录状态
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      alertStore.showAlert('请先登录后再上传文件', 'error');
-      router.push('/login');
-      return {
-        code: 401,
-        detail: { message: '未登录' }
-      };
-    }
-    
-    console.log('开始准备上传文件，已检查登录状态');
-    
     // 创建FormData对象
     const formData = new FormData();
     formData.append('file', file);
     
     // 确保axios默认设置包含凭据
     axios.defaults.withCredentials = true;
-    
-    // 使用正确的API URL
-    const apiUrl = 'https://localhost:5001/api/File/upload';
-    console.log('准备上传文件到:', apiUrl);
-    console.log('文件信息:', file.name, file.size, 'bytes');
-    
-    // 设置上传进度监听函数
-    const onUploadProgress = (progressEvent: any) => {
-      const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-      uploadProgress.value = percentCompleted;
-      console.log(`上传进度: ${percentCompleted}%`);
-    };
-    
-    // 直接上传文件
-    const response = await axios.post(apiUrl, formData, {
+    console.log(axios.defaults.withCredentials);
+    // 发送文件上传请求
+    const response = await axios.post('https://localhost:5001/api/File/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
       withCredentials: true,
-      onUploadProgress
+      onUploadProgress: (progressEvent: any) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        uploadProgress.value = percentCompleted;
+      }
     });
     
-    console.log('文件上传响应状态:', response.status);
-    console.log('文件上传响应数据:', response.data);
-    
+    // 处理响应
     if (response.data && response.data.success) {
-      console.log('文件上传成功，ID:', response.data.file.id);
-      // 文件上传成功，创建分享
-      return await createFileShare(response.data.file.id);
+      console.log("文件id", response.data.file.id);
+      // 文件上传成功，提示用户并重置表单
+      alertStore.showAlert(`文件上传成功！您可以在文件管理中查看和分享该文件`, 'success');
+      
+      // 重置表单
+      selectedUploadFile.value = null;
+      uploadProgress.value = 0;
+      
+      // 打开文件管理抽屉并刷新文件列表
+      if (!showDrawer.value) {
+        showDrawer.value = true;
+        fetchUserFiles();
+      } else {
+        fetchUserFiles();
+      }
     } else {
-      console.log('上传响应异常:', response.data);
       throw new Error(response.data?.message || '文件上传失败');
     }
   } catch (error: any) {
-    console.error('上传错误详情:', error);
+    // 简化错误处理
+    let errorMessage = '上传失败，请稍后重试';
     
-    // 处理特定错误类型
-    if (error.message && error.message.includes('Network Error')) {
-      alertStore.showAlert('网络错误，请检查后端API是否正在运行', 'error');
-    } else if (error.response) {
-      console.log('错误状态码:', error.response.status);
-      console.log('错误响应数据:', error.response.data);
-      
+    if (error.response) {
       if (error.response.status === 401) {
-        // 身份验证失败，清除登录状态
-        localStorage.removeItem('token');
-        localStorage.removeItem('isLoggedIn');
-        alertStore.showAlert('登录已过期，请重新登录', 'error');
+        errorMessage = '登录已过期，请重新登录';
         router.push('/login');
-      } else if (error.response.status === 403) {
-        alertStore.showAlert('没有权限上传文件', 'error');
-      } else if (error.response.status === 405) {
-        alertStore.showAlert('API方法不支持，请联系管理员', 'error');
-      } else if (error.response.status === 413) {
-        alertStore.showAlert('文件太大，超出服务器限制', 'error');
       } else if (error.response.data && error.response.data.message) {
-        alertStore.showAlert(error.response.data.message, 'error');
+        errorMessage = error.response.data.message;
       } else {
-        alertStore.showAlert(`上传失败 (${error.response.status})`, 'error');
+        errorMessage = `上传失败 (${error.response.status})`;
       }
-    } else {
-      alertStore.showAlert(error.message || '上传失败，请稍后重试', 'error');
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
+    alertStore.showAlert(errorMessage, 'error');
     throw error;
   }
 };
@@ -764,32 +682,14 @@ const toRetrieve = () => {
 
 const toggleDrawer = () => {
   showDrawer.value = !showDrawer.value
-}
-
-const viewDetails = (record: any) => {
-  selectedRecord.value = record
-}
-
-const deleteRecord = (id: number) => {
-  const index = fileDataStore.shareData.findIndex((record: any) => record.id === id)
-  if (index !== -1) {
-    fileDataStore.deleteShareData(index)
+  if (showDrawer.value) {
+    fetchUserFiles()
   }
 }
 
-const baseUrl = window.location.origin + '/#/'
-const getQRCodeValue = (record: any) => {
-  return `${baseUrl}?code=${record.retrieveCode}`
-}
-
-const incrementValue = (delta: number) => {
-  const currentValue = parseInt(expirationValue.value) || 0;
-  const newValue = currentValue + delta;
-  if (newValue >= 1) {
-    expirationValue.value = newValue.toString();
-  }
-}
-
+/**
+ * 用户登出
+ */
 const logout = async () => {
   console.log('Logout function triggered')
   alertStore.showAlert('正在退出登录...', 'info')
@@ -825,7 +725,20 @@ onMounted(() => {
   console.log('SendFileView mounted')
 })
 
-// 检查函数
+/**
+ * 检查上传条件是否满足
+ * @returns 如果满足上传条件返回true，否则返回false
+ */
+const checkUpload = () => {
+  if (!checkOpenUpload()) return false
+  if (!checkFileSize(selectedUploadFile.value!)) return false
+  return true
+}
+
+/**
+ * 检查是否允许游客上传
+ * @returns 如果允许上传返回true，否则返回false
+ */
 const checkOpenUpload = () => {
   // 检查是否允许游客上传，使用isLoggedIn标志判断是否登录
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -836,86 +749,130 @@ const checkOpenUpload = () => {
   return true
 }
 
+/**
+ * 检查文件大小是否超过限制
+ * @param file 要检查的文件对象
+ * @returns 如果文件大小合适返回true，否则返回false
+ */
 const checkFileSize = (file: File) => {
   if (file.size > config.uploadSize) {
     alertStore.showAlert(`文件大小超过限制 (${getStorageUnit(config.uploadSize)})`, 'error')
-    selectedFile.value = null
+    selectedUploadFile.value = null
     return false
   }
   return true
 }
 
-const checkExpirationTime = (method: string, value: string): boolean => {
-  if (method === 'forever' || method === 'count') return true
-
-  const maxSaveSeconds = config.max_save_seconds || 0
-  if (maxSaveSeconds === 0) return true // 如果没有限制，直接返回true
-
-  let totalSeconds = 0
-  switch (method) {
-    case 'minute':
-      totalSeconds = parseInt(value) * 60
-      break
-    case 'hour':
-      totalSeconds = parseInt(value) * 3600
-      break
-    case 'day':
-      totalSeconds = parseInt(value) * 86400
-      break
-    default:
-      return false
-  }
-
-  return totalSeconds <= maxSaveSeconds
-}
-
-const checkUpload = () => {
-  if (!checkOpenUpload()) return false
-  if (!checkFileSize(selectedFile.value!)) return false
-  if (!checkExpirationTime(expirationMethod.value, expirationValue.value)) return false
-  return true
-}
-
-// 文件分享函数
-const createFileShare = async (fileId: string) => {
+/**
+ * 获取用户的文件列表
+ */
+const fetchUserFiles = async () => {
   try {
-    // 检查登录状态
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
-      alertStore.showAlert('创建分享需要登录', 'error');
-      router.push('/login');
-      return {
-        code: 401,
-        detail: { message: '未登录' }
-      };
-    }
+    isLoadingFiles.value = true
+    const response = await axios.get('https://localhost:5001/api/File', {
+      withCredentials: true
+    })
     
-    // 根据过期方式转换为天数
+    if (response.data && response.data.success) {
+      userFiles.value = response.data.files
+    } else {
+      alertStore.showAlert('获取文件列表失败', 'error')
+    }
+  } catch (error: any) {
+    console.error('获取文件列表出错:', error)
+    alertStore.showAlert('获取文件列表失败', 'error')
+  } finally {
+    isLoadingFiles.value = false
+  }
+}
+
+/**
+ * 格式化文件大小显示
+ * @param bytes 文件大小（字节）
+ * @returns 格式化后的文件大小字符串
+ */
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) return bytes + ' B'
+  else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
+  else if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+  else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+}
+
+/**
+ * 格式化日期时间显示
+ * @param dateValue 日期值（字符串或数字）
+ * @returns 格式化后的日期时间字符串
+ */
+const formatDate = (dateValue: string | number) => {
+  if (!dateValue) return ''
+  const date = typeof dateValue === 'string' ? new Date(dateValue) : new Date(dateValue)
+  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * 打开文件分享对话框
+ * @param file 要分享的文件对象
+ */
+const shareFile = (file: FileItem) => {
+  console.log("准备分享文件:", { 
+    id: file.id, 
+    fileName: file.fileName, 
+    fileSize: formatFileSize(file.fileSize),
+    uploadedAt: formatDate(file.uploadedAt),
+    hasActiveShare: file.hasActiveShare
+  });
+  selectedFile.value = file
+  shareResult.value = null // 重置分享结果
+  
+  // 设置默认的过期日期（7天后）
+  const defaultDate = new Date()
+  defaultDate.setDate(defaultDate.getDate() + 7)
+  expirationDate.value = defaultDate.toISOString().split('T')[0]
+  
+  showShareDialog.value = true
+}
+
+/**
+ * 关闭文件分享对话框
+ */
+const closeShareDialog = () => {
+  showShareDialog.value = false
+  selectedUploadFile.value = null
+}
+
+/**
+ * 创建文件分享链接
+ */
+const createFileShare = async () => {
+  if (!selectedFile.value) return
+  
+  try {
+    console.log("开始创建分享，文件信息:", { 
+      id: selectedFile.value.id, 
+      fileName: selectedFile.value.fileName 
+    });
+    isCreatingShare.value = true
+    
+    // 从选择的日期计算天数
     let expirationDays = 7; // 默认7天
     
-    if (expirationMethod.value === 'day') {
-      expirationDays = parseInt(expirationValue.value);
-    } else if (expirationMethod.value === 'hour') {
-      expirationDays = parseInt(expirationValue.value) / 24;
-    } else if (expirationMethod.value === 'minute') {
-      expirationDays = parseInt(expirationValue.value) / (24 * 60);
-    } else if (expirationMethod.value === 'forever') {
-      expirationDays = 365; // 设置一个较长的时间表示"永久"
+    if (expirationDate.value) {
+      const today = new Date();
+      const selectedDate = new Date(expirationDate.value);
+      const diffTime = selectedDate.getTime() - today.getTime();
+      expirationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } else {
+      // 如果没有选择日期，使用默认的7天
+      expirationDays = 7;
     }
     
     // 如果expirationDays小于1, 设为1
     expirationDays = Math.max(1, Math.round(expirationDays));
+    console.log("分享参数:", { fileId: selectedFile.value.id, expirationDays });
     
-    // 确保axios默认设置包含凭据
-    axios.defaults.withCredentials = true;
-    
-    // 使用正确的API URL
-    const apiUrl = 'https://localhost:5001/api/File/share';
-    console.log('创建分享:', apiUrl, '文件ID:', fileId);
-    
-    // 按照API文档创建分享
-    const response = await axios.post(apiUrl, {
-      fileId: fileId,
+    // 创建分享
+    const response = await axios.post('https://localhost:5001/api/File/share', {
+      fileId: selectedFile.value.id,
       expirationDays: expirationDays
     }, {
       headers: {
@@ -924,46 +881,246 @@ const createFileShare = async (fileId: string) => {
       withCredentials: true
     });
     
-    console.log('创建分享响应:', response);
+    console.log("分享API响应:", response.data);
     
     if (response.data && response.data.success) {
       // 分享创建成功
-      return {
-        code: 200,
-        detail: {
-          code: response.data.share.shareCode,
-          name: response.data.share.fileName,
-          expiresAt: response.data.share.expiresAt
-        }
-      };
+      shareResult.value = response.data.share
+      console.log("分享创建成功:", shareResult.value);
+      alertStore.showAlert('创建分享成功', 'success')
+      // 刷新文件列表以更新hasActiveShare状态
+      fetchUserFiles()
     } else {
       throw new Error(response.data?.message || '创建分享失败');
     }
   } catch (error: any) {
-    console.error('创建分享失败:', error);
+    console.error("创建分享失败:", error);
+    let errorMessage = '创建分享失败，请稍后重试';
     
-    if (error.message && error.message.includes('Network Error')) {
-      alertStore.showAlert('网络错误，请检查后端API是否正在运行', 'error');
-    } else if (error.response) {
+    if (error.response) {
+      console.error("分享API错误详情:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      });
+      
       if (error.response.status === 401) {
-        localStorage.removeItem('token'); // 清除token标志
-        localStorage.removeItem('isLoggedIn');
-        alertStore.showAlert('登录已过期，请重新登录', 'error');
+        errorMessage = '登录已过期，请重新登录';
         router.push('/login');
-      } else if (error.response.status === 405) {
-        alertStore.showAlert('API方法不支持，请检查接口配置', 'error');
       } else if (error.response.data && error.response.data.message) {
-        alertStore.showAlert(error.response.data.message, 'error');
-      } else {
-        alertStore.showAlert(`创建分享失败 (${error.response.status})`, 'error');
+        errorMessage = error.response.data.message;
       }
-    } else {
-      alertStore.showAlert(error.message || '创建分享失败，请稍后重试', 'error');
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
-    throw error;
+    alertStore.showAlert(errorMessage, 'error');
+  } finally {
+    isCreatingShare.value = false
   }
-};
+}
+
+/**
+ * 开始文件重命名操作
+ * @param file 要重命名的文件对象
+ */
+const startRenaming = (file: FileItem) => {
+  console.log("准备重命名文件:", { id: file.id, fileName: file.fileName });
+  fileToRename.value = file;
+  newFileName.value = file.fileName;
+  showRenameDialog.value = true;
+}
+
+/**
+ * 关闭文件重命名对话框
+ */
+const closeRenameDialog = () => {
+  showRenameDialog.value = false;
+  fileToRename.value = null;
+  newFileName.value = '';
+}
+
+/**
+ * 确认重命名文件
+ */
+const confirmRename = async () => {
+  if (!fileToRename.value) return;
+  if (!newFileName.value || newFileName.value.trim() === '') {
+    alertStore.showAlert('文件名不能为空', 'error');
+    return;
+  }
+  
+  console.log("准备保存文件新名称:", { 
+    id: fileToRename.value.id, 
+    oldName: fileToRename.value.fileName, 
+    newName: newFileName.value 
+  });
+  
+  try {
+    // 显示完整请求信息以便调试
+    const requestData = {
+      fileId: fileToRename.value.id,
+      newFileName: newFileName.value
+    };
+    console.log("重命名请求URL:", 'https://localhost:5001/api/File/rename');
+    console.log("重命名请求方法:", 'PUT');
+    console.log("重命名请求数据:", requestData);
+    
+    // 调用重命名API - 使用PUT方法
+    const response = await axios.put('https://localhost:5001/api/File/rename', requestData, { 
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      withCredentials: true 
+    })
+    
+    console.log("重命名API响应:", response.data);
+    
+    if (response.data && response.data.success) {
+      // 更新文件列表中的文件名
+      const targetFile = userFiles.value.find(f => f.id === fileToRename.value!.id);
+      if (targetFile) {
+        targetFile.fileName = newFileName.value;
+      }
+      console.log("重命名成功:", { id: fileToRename.value.id, newName: newFileName.value });
+      alertStore.showAlert('重命名成功', 'success');
+      closeRenameDialog();
+    } else {
+      throw new Error(response.data?.message || '重命名失败')
+    }
+  } catch (error: any) {
+    // 完整输出错误对象以便调试
+    console.error('重命名失败，完整错误:', error);
+    
+    let errorMessage = '重命名失败，请稍后重试'
+    
+    if (error.response) {
+      console.error("重命名API错误详情:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+      
+      if (error.response?.status === 404) {
+        errorMessage = 'API端点不存在，请检查URL路径';
+      } else if (error.response?.status === 400) {
+        errorMessage = '请求参数错误: ' + (error.response.data?.message || '参数格式不正确');
+      } else if (error.response?.status === 401) {
+        errorMessage = '未授权，请重新登录';
+        router.push('/login');
+      } else if (error.response?.status === 403) {
+        errorMessage = '无权限进行此操作';
+      } else if (error.response?.status === 405) {
+        errorMessage = '请求方法不允许，应该使用: ' + (error.response.headers['allow'] || 'POST');
+      } else if (error.response?.status === 500) {
+        errorMessage = '服务器内部错误: ' + (error.response.data?.message || '请联系管理员');
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+    } else if (error.request) {
+      console.error("请求已发送但没有收到响应:", error.request);
+      errorMessage = '服务器无响应，请检查网络连接';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // 尝试使用POST方法作为备选方案
+    if (error.response?.status === 405) {
+      try {
+        console.log("尝试使用POST方法重试...");
+        const retryResponse = await axios.post('https://localhost:5001/api/File/rename', {
+          fileId: fileToRename.value.id,
+          newFileName: newFileName.value
+        }, { 
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true 
+        });
+        
+        console.log("使用POST方法重试响应:", retryResponse.data);
+        
+        if (retryResponse.data && retryResponse.data.success) {
+          // 更新文件列表中的文件名
+          const targetFile = userFiles.value.find(f => f.id === fileToRename.value!.id);
+          if (targetFile) {
+            targetFile.fileName = newFileName.value;
+          }
+          console.log("使用POST方法重命名成功");
+          alertStore.showAlert('重命名成功', 'success');
+          closeRenameDialog();
+          return;
+        }
+      } catch (retryError) {
+        console.error("POST方法重试失败:", retryError);
+      }
+    }
+    
+    alertStore.showAlert(errorMessage, 'error');
+  }
+}
+
+/**
+ * 确认删除文件，显示确认对话框
+ * @param file 要删除的文件对象
+ */
+const confirmDeleteFile = (file: FileItem) => {
+  console.log("准备删除文件:", { id: file.id, fileName: file.fileName });
+  fileToDelete.value = file
+  showDeleteConfirm.value = true
+}
+
+/**
+ * 执行文件删除操作
+ */
+const deleteFile = async () => {
+  if (!fileToDelete.value) return
+  
+  console.log("开始删除文件:", { 
+    id: fileToDelete.value.id, 
+    fileName: fileToDelete.value.fileName 
+  });
+  
+  try {
+    const response = await axios.delete(`https://localhost:5001/api/File/${fileToDelete.value.id}`, {
+      withCredentials: true
+    })
+    
+    console.log("删除API响应:", response.data);
+    
+    if (response.data && response.data.success) {
+      // 从列表中移除文件
+      userFiles.value = userFiles.value.filter(f => f.id !== fileToDelete.value!.id)
+      console.log("文件删除成功:", fileToDelete.value.fileName);
+      alertStore.showAlert('文件删除成功', 'success')
+    } else {
+      throw new Error(response.data?.message || '删除文件失败')
+    }
+  } catch (error: any) {
+    console.error('删除文件失败:', error)
+    let errorMessage = '删除失败，请稍后重试'
+    
+    if (error.response) {
+      console.error("删除API错误详情:", {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      });
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+    }
+    
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    showDeleteConfirm.value = false
+    fileToDelete.value = null
+  }
+}
 </script>
 
 <style scoped>
