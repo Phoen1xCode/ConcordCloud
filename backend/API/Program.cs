@@ -10,16 +10,15 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// develop example
-
 // 添加服务到容器
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    // 配置JSON序列化以处理循环引用
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
-    options.JsonSerializerOptions.MaxDepth = 64; // 增加最大深度
+    options.JsonSerializerOptions.MaxDepth = 64;
 });
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "ConcordCloud API", Version = "v1" });
@@ -47,6 +46,7 @@ builder.Services.AddAuthentication("CookieAuth")
         options.LoginPath = "/api/user/login";
         options.ExpireTimeSpan = TimeSpan.FromDays(1);
     });
+
 
 // 配置 CORS
 builder.Services.AddCors(options =>

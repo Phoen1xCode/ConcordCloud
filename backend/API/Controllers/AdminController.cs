@@ -26,16 +26,16 @@ public class AdminController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("无效请求数据"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         var (success, message, admin) = await _adminService.LoginAsync(loginDto);
         if (!success || admin == null)
         {
-            return BadRequest(ApiResponse.Error(message));
+            return ApiResponse<object>.Unauthorized(message).ToActionResult();
         }
 
-        // 创建管理员身份认证 Cookie
+        // Create admin authentication cookie
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
@@ -52,7 +52,7 @@ public class AdminController : ControllerBase
 
         await HttpContext.SignInAsync("CookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        return Ok(ApiResponse.Ok(admin, message));
+        return ApiResponse<object>.Ok(admin, message).ToActionResult();
     }
 
     [HttpPost("logout")]
@@ -60,7 +60,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync("CookieAuth");
-        return Ok(ApiResponse.Ok("退出登录成功"));
+        return ApiResponse<object>.Ok("Logout successful").ToActionResult();
     }
 
     [HttpGet("profile")]
@@ -69,16 +69,16 @@ public class AdminController : ControllerBase
     {
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var adminId))
         {
-            return BadRequest(ApiResponse.Error("无效的管理员标识"));
+            return ApiResponse<object>.BadRequest("Invalid admin identifier").ToActionResult();
         }
 
         var admin = await _adminService.GetAdminByIdAsync(adminId);
         if (admin == null)
         {
-            return NotFound(ApiResponse.Error("管理员账号不存在"));
+            return ApiResponse<object>.NotFound("Admin account does not exist").ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(admin));
+        return ApiResponse<object>.Ok(admin).ToActionResult();
     }
 
     [HttpPost("change-password")]
@@ -87,21 +87,21 @@ public class AdminController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("无效请求数据"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var adminId))
         {
-            return BadRequest(ApiResponse.Error("无效的管理员标识"));
+            return ApiResponse<object>.BadRequest("Invalid admin identifier").ToActionResult();
         }
 
         var (success, message) = await _adminService.ChangePasswordAsync(adminId, passwordDto);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 
     [HttpGet("users")]
@@ -109,7 +109,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetAllUsers()
     {
         var users = await _adminService.GetAllUsersAsync();
-        return Ok(ApiResponse.Ok(users));
+        return ApiResponse<object>.Ok(users).ToActionResult();
     }
 
     [HttpGet("users/{userId}")]
@@ -119,10 +119,10 @@ public class AdminController : ControllerBase
         var user = await _adminService.GetUserDetailsAsync(userId);
         if (user == null)
         {
-            return NotFound(ApiResponse.Error("用户不存在"));
+            return ApiResponse<object>.NotFound("User does not exist").ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(user));
+        return ApiResponse<object>.Ok(user).ToActionResult();
     }
 
     [HttpPost("users/{userId}/reset-password")]
@@ -131,16 +131,20 @@ public class AdminController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("无效请求数据"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         var (success, message) = await _adminService.ResetUserPasswordAsync(userId, resetDto);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 
     [HttpDelete("users/{userId}")]
@@ -150,10 +154,14 @@ public class AdminController : ControllerBase
         var (success, message) = await _adminService.DeleteUserAsync(userId);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 
     [HttpGet("files")]
@@ -161,7 +169,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetAllFiles()
     {
         var files = await _adminService.GetAllFilesAsync();
-        return Ok(ApiResponse.Ok(files));
+        return ApiResponse<object>.Ok(files).ToActionResult();
     }
 
     [HttpGet("users/{userId}/files")]
@@ -169,7 +177,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetUserFiles(Guid userId)
     {
         var files = await _adminService.GetUserFilesAsync(userId);
-        return Ok(ApiResponse.Ok(files));
+        return ApiResponse<object>.Ok(files).ToActionResult();
     }
 
     [HttpDelete("files/{fileId}")]
@@ -179,10 +187,14 @@ public class AdminController : ControllerBase
         var (success, message) = await _adminService.DeleteFileAsync(fileId);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 
     [HttpGet("statistics")]
@@ -190,7 +202,7 @@ public class AdminController : ControllerBase
     public async Task<IActionResult> GetPlatformStatistics()
     {
         var statistics = await _adminService.GetPlatformStatisticsAsync();
-        return Ok(ApiResponse.Ok(statistics));
+        return ApiResponse<object>.Ok(statistics).ToActionResult();
     }
 
     [HttpPost("initialize")]
@@ -198,15 +210,15 @@ public class AdminController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("无效请求数据"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         var (success, message) = await _adminService.InitializeDefaultAdminAsync(adminDto);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 } 
