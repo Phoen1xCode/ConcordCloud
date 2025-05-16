@@ -114,7 +114,7 @@ ConcordCloud.backend/
 dotnet tool install --global dotnet-ef
 
 // 在 Infrastructure 项目目录下运行
-dotnet ef migrations add InitialCreate --startup-project ../ConcordCloud.API/ConcordCloud.API.csproj
+dotnet ef migrations add InitialCreate --startup-project ../API/ConcordCloud.API.csproj
 
-dotnet ef database update --startup-project ../ConcordCloud.API/ConcordCloud.API.csproj
+dotnet ef database update --startup-project ../API/ConcordCloud.API.csproj
 ```
