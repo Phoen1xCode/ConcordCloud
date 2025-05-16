@@ -26,16 +26,16 @@ public class UserController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("Invalid request data"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         var (success, message, user) = await _userService.RegisterAsync(registerDto);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(user, message));
+        return ApiResponse<object>.Created(user, message).ToActionResult();
     }
 
 
@@ -44,13 +44,13 @@ public class UserController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("Invalid request data"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         var (success, message, user) = await _userService.LoginAsync(loginDto);
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            return ApiResponse<object>.Unauthorized(message).ToActionResult();
         }
 
         // Create authentication cookie
@@ -70,14 +70,14 @@ public class UserController : ControllerBase
 
         await HttpContext.SignInAsync("CookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
 
-        return Ok(ApiResponse.Ok(user, message));
+        return ApiResponse<object>.Ok(user, message).ToActionResult();
     }
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync("CookieAuth");
-        return Ok(ApiResponse.Ok("Logout successfully"));
+        return ApiResponse<object>.Ok("Logout successful").ToActionResult();
     }
 
     [HttpGet("profile")]
@@ -87,15 +87,15 @@ public class UserController : ControllerBase
         // Consider using TryParse to increase robustness
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
 
         var user = await _userService.GetUserByIdAsync(userId);
         if (user == null)
         {
-            return NotFound(ApiResponse.Error("User does not exist"));
+            return ApiResponse<object>.NotFound("User does not exist").ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(user));
+        return ApiResponse<object>.Ok(user).ToActionResult();
     }
 }

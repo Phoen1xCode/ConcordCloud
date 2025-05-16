@@ -23,7 +23,12 @@ public class FileController : ControllerBase
     // Helper method to get user ID safely
     private bool TryGetUserId(out Guid userId)
     {
-        userId = Guid.Empty;
+        if (User == null)
+        {
+            userId = Guid.Empty;
+            return false;
+        }
+        
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(userIdClaim, out userId);
     }
@@ -34,10 +39,10 @@ public class FileController : ControllerBase
     {
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
         var files = await _fileService.GetUserFilesAsync(userId);
-        return Ok(ApiResponse.Ok(files));
+        return ApiResponse<object>.Ok(files).ToActionResult();
     }
 
     [HttpPost("upload")]
@@ -48,14 +53,14 @@ public class FileController : ControllerBase
     {
         if (file == null || file.Length == 0)
         {
-            return BadRequest(ApiResponse.Error("Please select a file to upload"));
+            return ApiResponse<object>.BadRequest("Please select a file to upload").ToActionResult();
         }
         // Add file size check here if needed, although RequestSizeLimit helps
         // if (file.Length > YOUR_MAX_SIZE_IN_BYTES) { ... }
 
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
 
         using (var stream = file.OpenReadStream())
@@ -70,10 +75,10 @@ public class FileController : ControllerBase
             if (!result.Success)
             {
                 // Consider logging the error message here
-                return BadRequest(ApiResponse.Error(result.Message));
+                return ApiResponse<object>.BadRequest(result.Message).ToActionResult();
             }
 
-            return Ok(ApiResponse.Ok(result.File, result.Message));
+            return ApiResponse<object>.Created(result.File, result.Message).ToActionResult();
         }
     }
 
@@ -83,17 +88,21 @@ public class FileController : ControllerBase
     {
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
         var (success, message) = await _fileService.DeleteFileAsync(userId, id);
 
         if (!success)
         {
-            // Consider returning NotFound if the message indicates file not found vs. permission issue
-            return BadRequest(ApiResponse.Error(message));
+            // Determine if it's a permission issue or file not found
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(message));
+        return ApiResponse<object>.Ok(message).ToActionResult();
     }
 
     [HttpPut("rename")]
@@ -102,21 +111,25 @@ public class FileController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("Invalid request data"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
         var (success, message, file) = await _fileService.RenameFileAsync(userId, renameDto);
 
         if (!success)
         {
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(file, message));
+        return ApiResponse<object>.Ok(file, message).ToActionResult();
     }
 
     [HttpPost("share")]
@@ -125,21 +138,21 @@ public class FileController : ControllerBase
     {
         if (!ModelState.IsValid)
         {
-            return BadRequest(ApiResponse.Error("Invalid request data"));
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
         }
 
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
         var result = await _fileService.CreateFileShareAsync(userId, shareDto);
 
         if (result == null) // Assuming null indicates failure (e.g., file not found or permission denied)
         {
-            return BadRequest(ApiResponse.Error("Failed to create share"));
+            return ApiResponse<object>.NotFound("File not found or no permission to share").ToActionResult();
         }
 
-        return Ok(ApiResponse.Ok(result, "Share created successfully"));
+        return ApiResponse<object>.Created(result, "Share created successfully").ToActionResult();
     }
 
     [HttpGet("download/{id}")]
@@ -148,14 +161,17 @@ public class FileController : ControllerBase
     {
         if (!TryGetUserId(out var userId))
         {
-            return BadRequest(ApiResponse.Error("Invalid user identifier"));
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
         var (success, message, fileStream, fileName, contentType) = await _fileService.DownloadFileByIdAsync(userId, id);
 
         if (!success)
         {
-            // Consider returning NotFound if appropriate
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
         // IMPORTANT: Ensure the fileStream is disposed correctly after the response is sent.
@@ -168,15 +184,19 @@ public class FileController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(shareCode))
         {
-            return BadRequest(ApiResponse.Error("Share code cannot be empty"));
+            return ApiResponse<object>.BadRequest("Share code cannot be empty").ToActionResult();
         }
 
         var (success, message, fileStream, fileName, contentType) = await _fileService.DownloadFileByShareCodeAsync(shareCode);
 
         if (!success)
         {
-            // Consider returning NotFound or Gone if the link expired/invalid
-            return BadRequest(ApiResponse.Error(message));
+            if (message.Contains("expired", StringComparison.OrdinalIgnoreCase) || 
+                message.Contains("invalid", StringComparison.OrdinalIgnoreCase))
+            {
+                return ApiResponse<object>.NotFound(message).ToActionResult();
+            }
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
         return File(fileStream, contentType, fileName);
