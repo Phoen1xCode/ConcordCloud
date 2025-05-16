@@ -167,97 +167,56 @@ namespace ConcordCloud.Core.Services
 
         public async Task<FileShareResultDto> CreateFileShareAsync(Guid userId, FileShareDto shareDto)
         {
-            try
+            // 查找文件
+            var file = await _dbContext.Files
+                .Include(f => f.Share)
+                .FirstOrDefaultAsync(f => f.Id == shareDto.FileId);
+
+            if (file == null)
             {
-                Console.WriteLine($"开始创建文件分享 - 用户ID: {userId}, 文件ID: {shareDto.FileId}");
-                
-                // 使用事务来确保数据一致性
-                using var transaction = await _dbContext.Database.BeginTransactionAsync();
-                
-                try
+                return null;
+            }
+
+            // 验证文件所有权
+            if (file.OwnerId != userId)
+            {
+                return null;
+            }
+
+            // 生成分享码
+            string shareCode = GenerateShareCode();
+
+            // 设置过期时间
+            var expiresAt = DateTime.UtcNow.AddDays(shareDto.ExpirationDays);
+
+            // 如果已经存在分享，则更新
+            if (file.Share != null)
+            {
+                file.Share.ShareCode = shareCode;
+                file.Share.ExpiresAt = expiresAt;
+                file.Share.CreatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                // 创建新的分享记录
+                file.Share = new Entities.FileShare
                 {
-                    // 查找文件 - 使用AsNoTracking以避免EF Core跟踪实体状态
-                    var file = await _dbContext.Files
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(f => f.Id == shareDto.FileId);
-
-                    if (file == null)
-                    {
-                        Console.WriteLine($"文件不存在: {shareDto.FileId}");
-                        return null;
-                    }
-
-                    // 验证文件所有权
-                    if (file.OwnerId != userId)
-                    {
-                        Console.WriteLine($"用户 {userId} 不是文件 {shareDto.FileId} 的所有者");
-                        return null;
-                    }
-
-                    // 生成分享码
-                    string shareCode = GenerateShareCode();
-                    Console.WriteLine($"生成分享码: {shareCode}");
-
-                    // 设置过期时间
-                    var expiresAt = DateTime.UtcNow.AddDays(shareDto.ExpirationDays);
-                    
-                    // 查询是否已存在分享
-                    var existingShare = await _dbContext.FileShares
-                        .FirstOrDefaultAsync(s => s.FileId == shareDto.FileId);
-
-                    if (existingShare != null)
-                    {
-                        // 如果存在分享，直接删除旧的分享记录
-                        Console.WriteLine($"删除现有分享记录: {existingShare.Id}");
-                        _dbContext.FileShares.Remove(existingShare);
-                        await _dbContext.SaveChangesAsync();
-                    }
-                    
-                    // 创建全新的分享记录
-                    var newShare = new Entities.FileShare
-                    {
-                        Id = Guid.NewGuid(),
-                        FileId = shareDto.FileId,
-                        ShareCode = shareCode,
-                        CreatedAt = DateTime.UtcNow,
-                        ExpiresAt = expiresAt
-                    };
-                    
-                    // 添加新的分享记录
-                    Console.WriteLine($"创建新分享记录: {newShare.Id}");
-                    await _dbContext.FileShares.AddAsync(newShare);
-                    await _dbContext.SaveChangesAsync();
-                    
-                    // 提交事务
-                    await transaction.CommitAsync();
-                    Console.WriteLine("分享记录保存成功");
-
-                    return new FileShareResultDto
-                    {
-                        ShareCode = shareCode,
-                        ExpiresAt = expiresAt,
-                        FileName = file.FileName
-                    };
-                }
-                catch (Exception ex)
-                {
-                    // 如果出现任何错误，回滚事务
-                    Console.WriteLine($"保存分享记录时出错: {ex.Message}");
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                    Id = Guid.NewGuid(),
+                    FileId = file.Id,
+                    ShareCode = shareCode,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpiresAt = expiresAt
+                };
             }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+
+            await _dbContext.SaveChangesAsync();
+
+            return new FileShareResultDto
             {
-                // 重新抛出并发异常，让控制器处理
-                throw;
-            }
-            catch (Exception ex)
-            {
-                // 记录其他异常
-                Console.WriteLine($"创建文件分享出错: {ex.Message}");
-                throw;
-            }
+                ShareCode = shareCode,
+                ExpiresAt = expiresAt,
+                FileName = file.FileName
+            };
         }
 
         public async Task<(bool Success, string Message, Stream FileStream, string FileName, string ContentType)> DownloadFileByIdAsync(Guid userId, Guid fileId)
