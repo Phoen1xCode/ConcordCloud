@@ -133,7 +133,7 @@
                       ? 'hover:bg-blue-400 text-blue-400'
                       : 'hover:bg-blue-100 text-blue-600'
                   ]" :title="'分享'">
-                  <ShareIcon class="w-5 h-5" />
+                  <Share2Icon class="w-5 h-5" />
                 </button>
                 <button @click="startRenaming(file)"
                   class="p-2 rounded-full hover:bg-opacity-20 transition duration-300" :class="[
@@ -368,7 +368,7 @@ import {
   ShieldCheckIcon,
   ClipboardCopyIcon,
   LogOutIcon,
-  ShareIcon,
+  Share2Icon,
   PencilIcon
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
@@ -419,7 +419,7 @@ const minExpirationDate = computed(() => {
 })
 const maxExpirationDate = computed(() => {
   const today = new Date()
-  const maxDays = config.max_save_seconds ? Math.floor(config.max_save_seconds / 86400) : 1825 // 默认5年
+  const maxDays = config.max_save_seconds ? Math.floor(config.max_save_seconds / 86400) : 1825
   const maxDate = new Date(today)
   maxDate.setDate(today.getDate() + maxDays)
   return maxDate.toISOString().split('T')[0]
@@ -449,6 +449,10 @@ const handleFileDrop = async (event: DragEvent) => {
   }
 }
 
+/**
+ * 处理粘贴事件，允许用户直接从剪贴板粘贴图片文件
+ * @param event 剪贴板事件对象
+ */
 const handlePaste = async (event: ClipboardEvent) => {
   const items = event.clipboardData?.items
   if (!items) return
@@ -484,6 +488,11 @@ const handlePaste = async (event: ClipboardEvent) => {
   }
 }
 
+/**
+ * 计算文件的SHA-256哈希值，如果不支持则使用备用哈希方法
+ * @param file 要计算哈希的文件对象
+ * @returns 返回文件的哈希值字符串
+ */
 const calculateFileHash = async (file: File): Promise<string> => {
   return new Promise((resolve) => {
     const chunkSize = 2097152 // 保持 2MB 的切片大小用于计算哈希
@@ -529,7 +538,11 @@ const calculateFileHash = async (file: File): Promise<string> => {
   })
 }
 
-// 生成替代哈希的函数
+/**
+ * 生成基于文件属性的备用哈希值，当无法使用标准加密API时使用
+ * @param file 要生成哈希的文件对象
+ * @returns 返回基于文件名、大小和修改时间的哈希字符串
+ */
 const generateFallbackHash = (file: File): string => {
   // 使用文件名、大小和最后修改时间生成一个简单的哈希
   const fileInfo = `${file.name}-${file.size}-${file.lastModified}`
@@ -543,6 +556,9 @@ const generateFallbackHash = (file: File): string => {
   return Math.abs(hash).toString(16).padStart(64, '0')
 }
 
+/**
+ * 处理表单提交，上传选择的文件
+ */
 const handleSubmit = async () => {
   if (!selectedUploadFile.value) {
     alertStore.showAlert('请选择要上传的文件', 'error')
@@ -593,6 +609,10 @@ interface ShareResult {
   expiresAt: string;
 }
 
+/**
+ * 执行文件上传操作
+ * @param file 要上传的文件对象
+ */
 const handleDirectFileUpload = async (file: File): Promise<void> => {
   try {
     // 创建FormData对象
@@ -667,6 +687,9 @@ const toggleDrawer = () => {
   }
 }
 
+/**
+ * 用户登出
+ */
 const logout = async () => {
   console.log('Logout function triggered')
   alertStore.showAlert('正在退出登录...', 'info')
@@ -702,7 +725,20 @@ onMounted(() => {
   console.log('SendFileView mounted')
 })
 
-// 检查函数
+/**
+ * 检查上传条件是否满足
+ * @returns 如果满足上传条件返回true，否则返回false
+ */
+const checkUpload = () => {
+  if (!checkOpenUpload()) return false
+  if (!checkFileSize(selectedUploadFile.value!)) return false
+  return true
+}
+
+/**
+ * 检查是否允许游客上传
+ * @returns 如果允许上传返回true，否则返回false
+ */
 const checkOpenUpload = () => {
   // 检查是否允许游客上传，使用isLoggedIn标志判断是否登录
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -713,6 +749,11 @@ const checkOpenUpload = () => {
   return true
 }
 
+/**
+ * 检查文件大小是否超过限制
+ * @param file 要检查的文件对象
+ * @returns 如果文件大小合适返回true，否则返回false
+ */
 const checkFileSize = (file: File) => {
   if (file.size > config.uploadSize) {
     alertStore.showAlert(`文件大小超过限制 (${getStorageUnit(config.uploadSize)})`, 'error')
@@ -722,13 +763,9 @@ const checkFileSize = (file: File) => {
   return true
 }
 
-const checkUpload = () => {
-  if (!checkOpenUpload()) return false
-  if (!checkFileSize(selectedUploadFile.value!)) return false
-  return true
-}
-
-// 文件管理相关函数
+/**
+ * 获取用户的文件列表
+ */
 const fetchUserFiles = async () => {
   try {
     isLoadingFiles.value = true
@@ -749,7 +786,11 @@ const fetchUserFiles = async () => {
   }
 }
 
-// 格式化函数
+/**
+ * 格式化文件大小显示
+ * @param bytes 文件大小（字节）
+ * @returns 格式化后的文件大小字符串
+ */
 const formatFileSize = (bytes: number) => {
   if (bytes < 1024) return bytes + ' B'
   else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
@@ -757,13 +798,21 @@ const formatFileSize = (bytes: number) => {
   else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
 }
 
+/**
+ * 格式化日期时间显示
+ * @param dateValue 日期值（字符串或数字）
+ * @returns 格式化后的日期时间字符串
+ */
 const formatDate = (dateValue: string | number) => {
   if (!dateValue) return ''
   const date = typeof dateValue === 'string' ? new Date(dateValue) : new Date(dateValue)
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-// 文件分享相关
+/**
+ * 打开文件分享对话框
+ * @param file 要分享的文件对象
+ */
 const shareFile = (file: FileItem) => {
   console.log("准备分享文件:", { 
     id: file.id, 
@@ -783,12 +832,17 @@ const shareFile = (file: FileItem) => {
   showShareDialog.value = true
 }
 
+/**
+ * 关闭文件分享对话框
+ */
 const closeShareDialog = () => {
   showShareDialog.value = false
   selectedUploadFile.value = null
 }
 
-// 创建文件分享
+/**
+ * 创建文件分享链接
+ */
 const createFileShare = async () => {
   if (!selectedFile.value) return
   
@@ -866,7 +920,10 @@ const createFileShare = async () => {
   }
 }
 
-// 文件重命名相关
+/**
+ * 开始文件重命名操作
+ * @param file 要重命名的文件对象
+ */
 const startRenaming = (file: FileItem) => {
   console.log("准备重命名文件:", { id: file.id, fileName: file.fileName });
   fileToRename.value = file;
@@ -874,12 +931,18 @@ const startRenaming = (file: FileItem) => {
   showRenameDialog.value = true;
 }
 
+/**
+ * 关闭文件重命名对话框
+ */
 const closeRenameDialog = () => {
   showRenameDialog.value = false;
   fileToRename.value = null;
   newFileName.value = '';
 }
 
+/**
+ * 确认重命名文件
+ */
 const confirmRename = async () => {
   if (!fileToRename.value) return;
   if (!newFileName.value || newFileName.value.trim() === '') {
@@ -998,13 +1061,19 @@ const confirmRename = async () => {
   }
 }
 
-// 文件删除相关
+/**
+ * 确认删除文件，显示确认对话框
+ * @param file 要删除的文件对象
+ */
 const confirmDeleteFile = (file: FileItem) => {
   console.log("准备删除文件:", { id: file.id, fileName: file.fileName });
   fileToDelete.value = file
   showDeleteConfirm.value = true
 }
 
+/**
+ * 执行文件删除操作
+ */
 const deleteFile = async () => {
   if (!fileToDelete.value) return
   
