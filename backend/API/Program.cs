@@ -34,6 +34,9 @@ builder.Services.AddAuthentication("CookieAuth")
         options.Cookie.Name = "ConcordCloud.Auth";
         options.LoginPath = "/api/User/login";
         options.ExpireTimeSpan = TimeSpan.FromDays(1);
+         options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true; // 防止XSS攻击
     });
 
 // 配置 CORS
@@ -54,13 +57,6 @@ builder.Services.AddCors(options =>
             // 生产环境，使用配置的来源
             policyBuilder.WithOrigins(allowedOrigins)
                          .AllowCredentials();
-        }
-        else
-        {
-            // 生产环境且未配置来源，不允许任何跨域（或根据需要抛出异常）
-            // policyBuilder.WithOrigins(); // 不允许任何来源
-            // 或者在启动时检查并抛出异常 (见下方 app.Configuration 检查)
-            // 这里暂时保持不允许任何来源的状态，依赖启动检查
         }
 
         policyBuilder.AllowAnyMethod()

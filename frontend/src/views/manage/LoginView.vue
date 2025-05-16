@@ -149,7 +149,7 @@ const handleSubmit = async () => {
     // 先配置axios默认设置，确保所有请求都包含凭据
     axios.defaults.withCredentials = true;
     
-    const apiUrl = 'https://localhost:5001/api/User/login';
+    const apiUrl = 'https://localhost:5001/api/user/login';
     console.log('请求URL:', apiUrl);
     
     // 构建请求数据

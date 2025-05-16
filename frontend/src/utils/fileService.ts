@@ -6,7 +6,7 @@ const fileService = {
   // 获取用户文件列表
   async getFileList() {
     try {
-      const response = await api.get('/api/File');
+      const response = await api.get('/api/file');
       return response;
     } catch (error) {
       console.error('获取文件列表失败:', error);
@@ -32,7 +32,7 @@ const fileService = {
         }
       };
 
-      const response = await api.post('/api/File/upload', formData, config);
+      const response = await api.post('/api/file/upload', formData, config);
       
       // 确保返回的数据结构是SendFileView.vue期望的格式
       return {
@@ -54,7 +54,7 @@ const fileService = {
     try {
       // 使用原生 axios 直接获取二进制数据
       const response = await axios({
-        url: `${api.defaults.baseURL}/api/File/download/${fileId}`,
+        url: `${api.defaults.baseURL}/api/file/download/${fileId}`,
         method: 'GET',
         responseType: 'blob',
       });
@@ -79,7 +79,7 @@ const fileService = {
   // 删除文件
   async deleteFile(fileId: string) {
     try {
-      const response = await api.delete(`/api/File/${fileId}`);
+      const response = await api.delete(`/api/file/${fileId}`);
       return response;
     } catch (error) {
       console.error('文件删除失败:', error);
@@ -90,7 +90,7 @@ const fileService = {
   // 重命名文件
   async renameFile(fileId: string, newFileName: string) {
     try {
-      const response = await api.put('/api/File/rename', {
+      const response = await api.put('/api/file/rename', {
         fileId,
         newFileName
       });
@@ -111,7 +111,7 @@ const fileService = {
         }
       };
       
-      const response = await api.post('/api/File/share', {
+      const response = await api.post('/api/file/share', {
         fileId,
         expirationDays
       }, config);
@@ -135,7 +135,7 @@ const fileService = {
     try {
       // 使用原生 axios 直接获取二进制数据
       const response = await axios({
-        url: `${api.defaults.baseURL}/api/File/shared/${shareCode}`,
+        url: `${api.defaults.baseURL}/api/file/shared/${shareCode}`,
         method: 'GET',
         responseType: 'blob'
       });
