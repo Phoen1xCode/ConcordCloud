@@ -15,5 +15,4 @@
     <ProjectReference Include="..\Core\ConcordCloud.Core.csproj" />
   </ItemGroup>
 
-
 </Project> 

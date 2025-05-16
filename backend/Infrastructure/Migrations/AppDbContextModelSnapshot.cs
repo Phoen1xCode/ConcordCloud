@@ -17,38 +17,7 @@ namespace ConcordCloud.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.1");
 
-            modelBuilder.Entity("ConcordCloud.Core.Entities.Admin", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.ToTable("Admins");
-                });
-
-            modelBuilder.Entity("ConcordCloud.Core.Entities.ShareFile", b =>
+            modelBuilder.Entity("ConcordCloud.Core.Entities.FileShare", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -75,7 +44,7 @@ namespace ConcordCloud.Infrastructure.Migrations
                     b.HasIndex("ShareCode")
                         .IsUnique();
 
-                    b.ToTable("ShareFiles");
+                    b.ToTable("FileShares");
                 });
 
             modelBuilder.Entity("ConcordCloud.Core.Entities.User", b =>
@@ -116,21 +85,25 @@ namespace ConcordCloud.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ContentType")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FileName")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<long>("FileSize")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("OriginalFileName")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("StoragePath")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UploadedAt")
@@ -143,11 +116,11 @@ namespace ConcordCloud.Infrastructure.Migrations
                     b.ToTable("Files");
                 });
 
-            modelBuilder.Entity("ConcordCloud.Core.Entities.ShareFile", b =>
+            modelBuilder.Entity("ConcordCloud.Core.Entities.FileShare", b =>
                 {
                     b.HasOne("ConcordCloud.Core.Entities.UserFile", "File")
                         .WithOne("Share")
-                        .HasForeignKey("ConcordCloud.Core.Entities.ShareFile", "FileId")
+                        .HasForeignKey("ConcordCloud.Core.Entities.FileShare", "FileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -172,7 +145,8 @@ namespace ConcordCloud.Infrastructure.Migrations
 
             modelBuilder.Entity("ConcordCloud.Core.Entities.UserFile", b =>
                 {
-                    b.Navigation("Share");
+                    b.Navigation("Share")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
