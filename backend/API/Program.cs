@@ -38,54 +38,69 @@ builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorage>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
-// 添加简单的Cookie认证
 builder.Services.AddAuthentication("CookieAuth")
     .AddCookie("CookieAuth", options =>
     {
         options.Cookie.Name = "ConcordCloud.Auth";
         options.LoginPath = "/api/user/login";
         options.ExpireTimeSpan = TimeSpan.FromDays(1);
+        options.Cookie.SameSite = SameSiteMode.None;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
     });
 
 
 // 配置 CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policyBuilder =>
+    // 主策略：带凭证支持的跨域访问
+    options.AddPolicy("AllowWithCredentials", policyBuilder =>
     {
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-
-        if (builder.Environment.IsDevelopment() || (allowedOrigins != null && allowedOrigins.Contains("*")))
+        var origins = new List<string>();
+        
+        if (builder.Environment.IsDevelopment())
         {
-            // 开发环境或配置允许所有来源
-            policyBuilder.AllowAnyOrigin();
-        }
-        else if (allowedOrigins != null && allowedOrigins.Length > 0)
-        {
-            // 生产环境，使用配置的来源
-            policyBuilder.WithOrigins(allowedOrigins);
+            // 开发环境允许典型前端开发地址
+            origins.AddRange(new[]
+            {
+                "http://localhost:5173",
+                "https://localhost:5173",
+                "http://127.0.0.1:5173"
+            });
         }
         else
         {
-            // 生产环境且未配置来源，不允许任何跨域（或根据需要抛出异常）
-            // policyBuilder.WithOrigins(); // 不允许任何来源
-            // 或者在启动时检查并抛出异常 (见下方 app.Configuration 检查)
-            // 这里暂时保持不允许任何来源的状态，依赖启动检查
+            // 生产环境从配置读取
+            var configOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+            if (configOrigins == null || configOrigins.Length == 0)
+            {
+                throw new InvalidOperationException("CORS AllowedOrigins must be configured in production");
+            }
+            origins.AddRange(configOrigins);
         }
 
-        policyBuilder.AllowAnyMethod()
-                     .AllowAnyHeader();
+        policyBuilder.WithOrigins(origins.ToArray())
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+            .WithExposedHeaders("Content-Disposition");
     });
-    
-    // 管理员后台的 CORS 策略
+
+    // 管理员专用策略
     options.AddPolicy("AdminOnly", policyBuilder =>
     {
-        var adminDomain = builder.Configuration.GetSection("Admin:Domain").Get<string>() ?? "admin.concordcloud.com";
+        var adminDomain = builder.Configuration.GetSection("Admin:Domain").Get<string>();
+        if (string.IsNullOrEmpty(adminDomain))
+        {
+            adminDomain = "admin.concordcloud.com"; // 默认值
+        }
         policyBuilder.WithOrigins(adminDomain)
-                     .AllowAnyMethod()
-                     .AllowAnyHeader();
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
+
 
 // 添加Web服务器配置
 builder.WebHost.ConfigureKestrel(serverOptions =>
