@@ -44,10 +44,10 @@ const router = createRouter({
           component: () => import('@/views/manage/FileManageView.vue')
         },
         {
-          path: '/admin/settings',
-          name: 'Settings',
-          component: () => import('@/views/manage/SystemSettingsView.vue')
-        }
+          path: '/admin/users',
+          name: 'UserManage',
+          component: () => import('@/views/manage/UserManageView.vue')
+        },
       ]
     },
     

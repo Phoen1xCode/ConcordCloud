@@ -1,5 +1,4 @@
-<template>
-  <div class="p-6 h-screen overflow-y-auto custom-scrollbar">
+<template>  <div class="p-6 min-h-fit custom-scrollbar">
     <!-- 页面标题和统计信息 -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold mb-4" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">
@@ -18,7 +17,7 @@
               ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
               : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400',
             'w-full pl-10 pr-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
-          ]" placeholder="搜索文件名称、描述..." />
+          ]" placeholder="搜索文件名称..." />
           <SearchIcon class="absolute left-3 top-3 w-5 h-5" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
         </div>
         <button @click="handleSearch"
@@ -57,8 +56,15 @@
               :class="[isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50']">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <span class="font-medium select-all" :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
-                    {{ file.code }}
+                  <span class="font-medium cursor-pointer group relative" :class="[isDarkMode ? 'text-white' : 'text-gray-900']" @click="toggleIdDisplay($event)">
+                    {{ truncateId(file.id) }}
+                    <!-- 悬浮提示 -->
+                    <div
+                      class="absolute left-0 -top-2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div class="bg-gray-900 text-white text-sm rounded px-2 py-1 max-w-xs break-all">
+                        {{ file.id }}
+                      </div>
+                    </div>
                   </span>
                 </div>
               </td>
@@ -67,14 +73,14 @@
                   <FileIcon class="w-5 h-5 mr-2 flex-shrink-0"
                     :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-500']" />
                   <span class="font-medium truncate max-w-[200px]"
-                    :class="[isDarkMode ? 'text-white' : 'text-gray-900']" :title="file.prefix">
-                    {{ file.prefix }}
+                    :class="[isDarkMode ? 'text-white' : 'text-gray-900']" :title="file.filename">
+                    {{ file.filename }}
                   </span>
                   <!-- 悬浮提示 -->
                   <div
                     class="absolute left-0 -top-2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                     <div class="bg-gray-900 text-white text-sm rounded px-2 py-1 max-w-xs break-all">
-                      {{ file.prefix }}
+                      {{ file.filename }}
                     </div>
                   </div>
                 </div>
@@ -82,43 +88,25 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   :class="[isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800']">
-                  {{ Math.round((file.size / 1024 / 1024) * 100) / 100 }}MB
+                  {{ Math.round((file.fileSize / 1024) * 100) / 100 }}KB
                 </span>
-              </td>
-              <td class="px-6 py-4">
-                <div class="group relative">
-                  <span class="block truncate max-w-[250px]" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
-                    {{ file.text }}
-                  </span>
-                  <!-- 悬浮提示 -->
-                  <div
-                    class="absolute left-0 -top-2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                    <div class="bg-gray-900 text-white text-sm rounded px-2 py-1 max-w-xs break-all">
-                      {{ file.text }}
-                    </div>
-                  </div>
-                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="[
-                  file.expired_at
-                    ? (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800')
-                    : (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800')
+                  file.hasActiveShare
+                    ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800')
+                    : (isDarkMode ? 'bg-yellow-900/30 text-yellow-400' : 'bg-yellow-100 text-yellow-800')
                 ]">
-                  {{ file.expired_at ? formatTimestamp(file.expired_at) : '永久' }}
+                  {{ file.hasActiveShare ? '已共享' : '未共享' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                  {{ formatTimestamp(file.uploadedAt) }}
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center space-x-2">
-                  <button @click="openEditModal(file)"
-                    class="inline-flex items-center px-3 py-1.5 rounded-md transition-colors duration-200" :class="[
-                      isDarkMode
-                        ? 'bg-blue-900/20 text-blue-400 hover:bg-blue-900/30'
-                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    ]">
-                    <PencilIcon class="w-4 h-4 mr-1.5" />
-                    编辑
-                  </button>
                   <button @click="deleteFile(file.id)"
                     class="inline-flex items-center px-3 py-1.5 rounded-md transition-colors duration-200" :class="[
                       isDarkMode
@@ -193,189 +181,6 @@
       </div>
     </div>
 
-    <!-- 添加编辑模态框 -->
-    <div v-if="showEditModal" class="fixed inset-0 z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <!-- 背景遮罩 - 添加高斯模糊和渐变效果 -->
-      <div
-        class="fixed inset-0 bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-sm transition-opacity duration-300"
-        @click="closeEditModal"></div>
-
-      <!-- 模态框容器 - 添加缩放动画效果 -->
-      <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-          <div
-            class="relative transform overflow-hidden rounded-2xl text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl animate-modal-scale"
-            :class="[isDarkMode ? 'bg-gray-800/95 backdrop-blur-md' : 'bg-white']">
-
-            <!-- 模态框头部 - 添加渐变背景 -->
-            <div class="relative px-6 pt-6 pb-4"
-              :class="[isDarkMode ? 'bg-gradient-to-r from-gray-800/50 to-gray-700/50' : 'bg-gradient-to-r from-gray-50 to-white']">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                  <div class="p-2 rounded-lg" :class="[isDarkMode ? 'bg-indigo-500/10' : 'bg-indigo-50']">
-                    <PencilIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                  </div>
-                  <h3 class="text-xl font-semibold leading-6" :class="[isDarkMode ? 'text-white' : 'text-gray-900']">
-                    编辑文件信息
-                  </h3>
-                </div>
-                <!-- 优化的关闭按钮 -->
-                <button @click="closeEditModal" class="rounded-lg p-2 transition-all duration-200 hover:rotate-90"
-                  :class="[isDarkMode ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100']">
-                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- 表单内容 -->
-            <div class="px-6 py-5">
-              <div class="grid gap-6">
-                <!-- 取件码 -->
-                <div class="space-y-2 group">
-                  <label class="text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
-                    :class="[isDarkMode ? 'text-gray-300 group-focus-within:text-indigo-400' : 'text-gray-700 group-focus-within:text-indigo-600']">
-                    <span>取件码</span>
-                    <div class="h-px flex-1 transition-colors duration-200"
-                      :class="[isDarkMode ? 'bg-gray-700 group-focus-within:bg-indigo-500/50' : 'bg-gray-200 group-focus-within:bg-indigo-500/30']">
-                    </div>
-                  </label>
-                  <div class="relative rounded-lg shadow-sm">
-                    <input type="text" v-model="editForm.code"
-                      class="block w-full rounded-lg border-0 py-2.5 pl-4 pr-10 transition-all duration-200 focus:ring-2 focus:ring-inset sm:text-sm"
-                      :class="[
-                        isDarkMode
-                          ? 'bg-gray-700/50 text-white placeholder-gray-400 focus:ring-indigo-500/50'
-                          : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-indigo-500'
-                      ]" placeholder="输入取件码">
-                    <div
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none transition-opacity duration-200 opacity-0 group-focus-within:opacity-100">
-                      <CheckIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 文件名称 -->
-                <div class="space-y-2 group">
-                  <label class="text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
-                    :class="[isDarkMode ? 'text-gray-300 group-focus-within:text-indigo-400' : 'text-gray-700 group-focus-within:text-indigo-600']">
-                    <span>文件名称</span>
-                    <div class="h-px flex-1 transition-colors duration-200"
-                      :class="[isDarkMode ? 'bg-gray-700 group-focus-within:bg-indigo-500/50' : 'bg-gray-200 group-focus-within:bg-indigo-500/30']">
-                    </div>
-                  </label>
-                  <div class="relative rounded-lg shadow-sm">
-                    <input type="text" v-model="editForm.prefix"
-                      class="block w-full rounded-lg border-0 py-2.5 pl-4 pr-10 transition-all duration-200 focus:ring-2 focus:ring-inset sm:text-sm"
-                      :class="[
-                        isDarkMode
-                          ? 'bg-gray-700/50 text-white placeholder-gray-400 focus:ring-indigo-500/50'
-                          : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-indigo-500'
-                      ]" placeholder="输入文件名称">
-                    <div
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none transition-opacity duration-200 opacity-0 group-focus-within:opacity-100">
-                      <CheckIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 文件后缀 -->
-                <div class="space-y-2 group">
-                  <label class="text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
-                    :class="[isDarkMode ? 'text-gray-300 group-focus-within:text-indigo-400' : 'text-gray-700 group-focus-within:text-indigo-600']">
-                    <span>文件后缀</span>
-                    <div class="h-px flex-1 transition-colors duration-200"
-                      :class="[isDarkMode ? 'bg-gray-700 group-focus-within:bg-indigo-500/50' : 'bg-gray-200 group-focus-within:bg-indigo-500/30']">
-                    </div>
-                  </label>
-                  <div class="relative rounded-lg shadow-sm">
-                    <input type="text" v-model="editForm.suffix"
-                      class="block w-full rounded-lg border-0 py-2.5 pl-4 pr-10 transition-all duration-200 focus:ring-2 focus:ring-inset sm:text-sm"
-                      :class="[
-                        isDarkMode
-                          ? 'bg-gray-700/50 text-white placeholder-gray-400 focus:ring-indigo-500/50'
-                          : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-indigo-500'
-                      ]" placeholder="输入文件后缀">
-                    <div
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none transition-opacity duration-200 opacity-0 group-focus-within:opacity-100">
-                      <CheckIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 过期时间 -->
-                <div class="space-y-2 group">
-                  <label class="text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
-                    :class="[isDarkMode ? 'text-gray-300 group-focus-within:text-indigo-400' : 'text-gray-700 group-focus-within:text-indigo-600']">
-                    <span>过期时间</span>
-                    <div class="h-px flex-1 transition-colors duration-200"
-                      :class="[isDarkMode ? 'bg-gray-700 group-focus-within:bg-indigo-500/50' : 'bg-gray-200 group-focus-within:bg-indigo-500/30']">
-                    </div>
-                  </label>
-                  <div class="relative rounded-lg shadow-sm">
-                    <input type="datetime-local" v-model="editForm.expired_at"
-                      class="block w-full rounded-lg border-0 py-2.5 pl-4 pr-10 transition-all duration-200 focus:ring-2 focus:ring-inset sm:text-sm"
-                      :class="[
-                        isDarkMode
-                          ? 'bg-gray-700/50 text-white placeholder-gray-400 focus:ring-indigo-500/50'
-                          : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-indigo-500'
-                      ]">
-                    <div
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none transition-opacity duration-200 opacity-0 group-focus-within:opacity-100">
-                      <CheckIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 下载次数限制 -->
-                <div class="space-y-2 group">
-                  <label class="text-sm font-medium flex items-center space-x-2 transition-colors duration-200"
-                    :class="[isDarkMode ? 'text-gray-300 group-focus-within:text-indigo-400' : 'text-gray-700 group-focus-within:text-indigo-600']">
-                    <span>下载次数限制</span>
-                    <div class="h-px flex-1 transition-colors duration-200"
-                      :class="[isDarkMode ? 'bg-gray-700 group-focus-within:bg-indigo-500/50' : 'bg-gray-200 group-focus-within:bg-indigo-500/30']">
-                    </div>
-                  </label>
-                  <div class="relative rounded-lg shadow-sm">
-                    <input type="number" v-model="editForm.expired_count"
-                      class="block w-full rounded-lg border-0 py-2.5 pl-4 pr-10 transition-all duration-200 focus:ring-2 focus:ring-inset sm:text-sm"
-                      :class="[
-                        isDarkMode
-                          ? 'bg-gray-700/50 text-white placeholder-gray-400 focus:ring-indigo-500/50'
-                          : 'bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-indigo-500'
-                      ]" placeholder="输入下载次数限制">
-                    <div
-                      class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none transition-opacity duration-200 opacity-0 group-focus-within:opacity-100">
-                      <CheckIcon class="w-5 h-5" :class="[isDarkMode ? 'text-indigo-400' : 'text-indigo-600']" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 优化的操作按钮区域 -->
-            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gradient-to-b"
-              :class="[isDarkMode ? 'border-gray-700/50 from-gray-800/50 to-gray-800' : 'border-gray-200 from-gray-50 to-white']">
-              <button @click="closeEditModal"
-                class="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200"
-                :class="[
-                  isDarkMode
-                    ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 hover:text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                ]">
-                取消
-              </button>
-              <button @click="handleUpdate"
-                class="inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/35">
-                <CheckIcon class="w-4 h-4 mr-2" />
-                保存更改
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -389,7 +194,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PencilIcon,
-  CheckIcon,
+  CheckIcon
 } from 'lucide-vue-next'
 import { useAlertStore } from '@/stores/alertStore'
 
@@ -406,161 +211,178 @@ function formatTimestamp(timestamp: string): string {
 
 const isDarkMode = inject('isDarkMode')
 const tableData: any = ref([])
+const allFiles: any = ref([]) // 存储所有原始文件数据，用于搜索恢复
 const alertStore = useAlertStore()
-// 修改文件表头
-const fileTableHeaders = ['取件码', '名称', '大小', '描述', '过期时间', '操作']
+// 文件表头
+const fileTableHeaders = ['ID', '文件名称', '大小', '共享状态', '上传时间', '操作']
 
 // 分页参数
 const params = ref({
   page: 1,
-  size: 10,
+  size: 5,
   total: 0,
   keyword: ''
 })
 
-// 添加编辑相关的状态
-const showEditModal = ref(false)
-const editForm = ref({
-  id: null,
-  code: '',
-  prefix: '',
-  suffix: '',
-  expired_at: '',
-  expired_count: null
-})
+// 删除所有分享相关函数
 
-// 打开编辑模态框
-const openEditModal = (file: any) => {
-  editForm.value = {
-    id: file.id,
-    code: file.code,
-    prefix: file.prefix,
-    suffix: file.suffix,
-    expired_at: file.expired_at ? file.expired_at.slice(0, 16) : '', // 格式化日期时间
-    expired_count: file.expired_count
-  }
-  showEditModal.value = true
-}
-
-// 关闭编辑模态框
-const closeEditModal = () => {
-  showEditModal.value = false
-  editForm.value = {
-    id: null,
-    code: '',
-    prefix: '',
-    suffix: '',
-    expired_at: '',
-    expired_count: null
-  }
-}
-
-// 处理更新
-const handleUpdate = async () => {
-  try {
-    await api({
-      url: 'admin/file/update',
-      method: 'patch',
-      data: editForm.value
-    })
-    await loadFiles()
-    closeEditModal()
-  } catch (error: any) {
-    alertStore.showAlert(error.response.data.detail, 'error')
-  }
-}
-
-// 下载文件处理
-const downloadFile = async (id: number) => {
-  try {
-    const response = await api({
-      url: 'admin/file/download',
-      method: 'get',
-      params: { id },
-      responseType: 'blob'
-    })
-
-    const contentDisposition = response.headers['content-disposition']
-    let filename = 'file'
-    const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
-    if (filenameMatch != null && filenameMatch[1]) {
-      filename = filenameMatch[1].replace(/['"]/g, '')
-    }
-
-    // @ts-ignore
-    if (window.showSaveFilePicker) {
-      await saveFileByWebApi(response.data, filename)
-    } else {
-      await saveFileByElementA(response.data, filename)
-    }
-  } catch (error) {
-    console.error('下载失败:', error)
-  }
-}
-
-// 删除文件处理
-const deleteFile = async (id: number) => {
-  try {
-    await api({
-      url: 'admin/file/delete',
-      method: 'delete',
-      data: { id }
-    })
-    await loadFiles()
-  } catch (error) {
-    console.error('删除失败:', error)
-  }
-}
-
-// 文件保存辅助函数
-async function saveFileByElementA(fileBlob: Blob, filename: string) {
-  const downloadUrl = window.URL.createObjectURL(fileBlob)
-  const link = document.createElement('a')
-  link.href = downloadUrl
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  window.URL.revokeObjectURL(downloadUrl)
-  document.body.removeChild(link)
-}
-
-async function saveFileByWebApi(fileBlob: Blob, filename: string) {
-  // @ts-ignore
-  const newHandle = await window.showSaveFilePicker({
-    suggestedName: filename
-  })
-  const writableStream = await newHandle.createWritable()
-  await writableStream.write(fileBlob)
-  await writableStream.close()
-}
+// 删除下载相关函数
 
 // 加载文件列表
 const loadFiles = async () => {
   try {
+    // 创建查询参数对象
+    const queryParams = {
+      page: params.value.page,
+      size: params.value.size
+    };
+    
+    // 只用于记录
+    if (params.value.keyword && params.value.keyword.trim() !== '') {
+      console.log('搜索关键词:', params.value.keyword);
+    }
+    
+    console.log('发送查询参数:', queryParams);
+    
     const res: any = await api({
-      url: '/admin/file/list',
+      url: '/api/admin/files',
       method: 'get',
-      params: params.value
+      params: queryParams
     })
-    tableData.value = res.detail.data
-    params.value.total = res.detail.total
-  } catch (error) {
-    console.error('加载文件列表失败:', error)
+    console.log('Files API response:', res)
+    
+    // 基于实际API响应结构调整数据解析
+    let responseData = [];
+    if (res.data && res.data.data && res.data.data.$values) {
+      // 数据结构: res.data.data.$values
+      responseData = res.data.data.$values;
+      params.value.total = res.data.data.$values.length;
+    } else if (res.data && res.data.$values) {
+      // 数据结构: res.data.$values
+      responseData = res.data.$values;
+      params.value.total = res.data.$values.length;
+    } else if (res.data && Array.isArray(res.data.data)) {
+      // 数据结构: res.data.data[]
+      responseData = res.data.data;
+      params.value.total = res.data.data.length;
+    } else if (res.data && Array.isArray(res.data)) {
+      // 数据结构: res.data[]
+      responseData = res.data;
+      params.value.total = res.data.length;
+    } else if (res.$values) {
+      // 数据结构: res.$values
+      responseData = res.$values;
+      params.value.total = res.$values.length;
+    } else {
+      // 兜底
+      responseData = [];
+      params.value.total = 0;
+      console.error('未知的API响应结构:', res);
+    }
+    
+    // 数据转换 - 确保数据结构符合模板要求
+    const processedData = responseData.map((item: any) => {
+      console.log('原始文件项数据:', item);
+      // 调试输出，查找文件名字段
+      const keys = Object.keys(item);
+      console.log('文件项字段列表:', keys);
+      
+      return {
+        $id: item.$id || '',
+        id: item.id || '',
+        // 尝试多种可能的文件名字段名
+        filename: item.filename || item.name || item.fileName || item.file_name || '',
+        fileSize: item.fileSize || item.size || 0,
+        contentType: item.contentType || item.type || item.mime_type || item.mimeType || '未知类型',
+        hasActiveShare: item.hasActiveShare === true,
+        uploadedAt: item.uploadedAt || item.uploadAt || item.created_at || item.createdAt || new Date().toISOString()
+      };
+    });
+    
+    // 保存处理后的完整数据，用于搜索过滤
+    allFiles.value = [...processedData];
+    
+    // 表格数据根据搜索关键词决定显示全部还是过滤后的
+    if (params.value.keyword && params.value.keyword.trim() !== '') {
+      // 如果有搜索关键词，立即应用搜索过滤
+      applySearchFilter(params.value.keyword.trim());
+    } else {
+      // 否则显示所有数据
+      tableData.value = processedData;
+    }
+    
+  } catch (error: any) {
+    console.error('加载文件列表失败:', error);
+    const errorMessage = error.response?.data?.detail || error.message || '加载文件列表失败';
+    alertStore.showAlert(errorMessage, 'error');
+    // 失败时设置空数据
+    tableData.value = [];
+    params.value.total = 0;
   }
+}
+
+// 前端搜索过滤函数
+const applySearchFilter = (keyword: string) => {
+  if (!keyword) {
+    // 如果没有关键词，显示所有文件
+    tableData.value = [...allFiles.value];
+    params.value.total = allFiles.value.length;
+    return;
+  }
+  
+  const lowerCaseKeyword = keyword.toLowerCase();
+  // 在前端过滤数据
+  const filteredData = allFiles.value.filter((file: any) => {
+    // 在多个字段中搜索关键词
+    const filename = (file.filename || '').toLowerCase();
+ /*   const id = (file.id || '').toLowerCase();
+    const contentType = (file.contentType || '').toLowerCase();*/
+    
+    return filename.includes(lowerCaseKeyword);
+          /* id.includes(lowerCaseKeyword) || 
+           contentType.includes(lowerCaseKeyword);*/
+  });
+  
+  console.log(`搜索结果: 从 ${allFiles.value.length} 项中过滤出 ${filteredData.length} 项`);
+  
+  // 更新表格数据和分页计数
+  tableData.value = filteredData;
+  params.value.total = filteredData.length;
 }
 
 // 页码改变处理函数
 const handlePageChange = async (page: any) => {
-  if (page < 1 || page > totalPages.value) return
-  params.value.page = page
-  await loadFiles()
+  if (page < 1 || page > totalPages.value) return;
+  params.value.page = page;
+  
+  // 如果是搜索状态，不需要重新加载数据
+  if (params.value.keyword && params.value.keyword.trim() !== '') {
+    console.log(`搜索状态切换到第 ${page} 页，前端分页`);
+  } else {
+    await loadFiles();
+  }
 }
 
-// 初始加载
-loadFiles()
+// 添加搜索处理函数
+const handleSearch = async () => {
+  console.log('执行搜索，关键词:', params.value.keyword);
+  params.value.page = 1; // 重置页码到第一页
+  
+  if (params.value.keyword && params.value.keyword.trim() !== '') {
+    // 有搜索关键词时，在前端过滤
+    applySearchFilter(params.value.keyword.trim());
+  } else {
+    // 无搜索关键词时，恢复显示所有文件
+    tableData.value = [...allFiles.value];
+    params.value.total = allFiles.value.length;
+  }
+}
 
 // 计算总页数
 const totalPages = computed(() => Math.ceil(params.value.total / params.value.size))
+
+// 初始加载
+loadFiles()
 
 // 计算要显示的页码
 const displayedPages = computed(() => {
@@ -598,10 +420,43 @@ const displayedPages = computed(() => {
   return pages
 })
 
-// 添加搜索处理函数
-const handleSearch = async () => {
-  params.value.page = 1 // 重置页码到第一页
-  await loadFiles()
+// 添加ID截断函数
+const truncateId = (id: string) => {
+  if (!id) return '';
+  // 显示前8个字符
+  return id.substring(0, 8) + '...';
+}
+
+// 添加点击ID显示完整内容的功能
+const toggleIdDisplay = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  const fullId = target.parentElement?.querySelector('.group-hover\\:opacity-100 div')?.textContent?.trim();
+  if (fullId) {
+    // 复制到剪贴板
+    navigator.clipboard.writeText(fullId)
+      .then(() => {
+        alertStore.showAlert('ID已复制到剪贴板', 'success');
+      })
+      .catch(() => {
+        alertStore.showAlert('复制失败，请手动复制', 'error');
+      });
+  }
+}
+
+// 保留删除文件处理函数
+// 删除文件处理
+const deleteFile = async (id: string) => {
+  try {
+    await api({
+      url: `/api/admin/files/${id}`,
+      method: 'delete'
+    })
+    await loadFiles()
+    alertStore.showAlert('文件删除成功', 'success')
+  } catch (error) {
+    console.error('删除失败:', error)
+    alertStore.showAlert('删除失败', 'error')
+  }
 }
 </script>
 
@@ -627,3 +482,4 @@ input:focus {
   transform: scale(1.002);
 }
 </style>
+

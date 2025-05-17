@@ -46,13 +46,23 @@
           </div>
           <div>
             <label for="password" class="sr-only">密码</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required
-              v-model="password" :class="[
-                'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
-                isDarkMode
-                  ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-                  : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
-              ]" placeholder="密码" />
+            <div class="relative">
+              <input id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required
+                v-model="password" :class="[
+                  'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                  isDarkMode
+                    ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+                    : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+                ]" placeholder="密码" />
+              <button 
+                type="button" 
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                <EyeIcon v-if="!showPassword" class="h-5 w-5" />
+                <EyeOffIcon v-else class="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
         <div>
@@ -137,7 +147,7 @@
                 <input
                   id="adminPassword"
                   v-model="adminPassword"
-                  type="password"
+                  :type="showAdminPassword ? 'text' : 'password'"
                   placeholder="管理员密码"
                   class="w-full px-4 py-2.5 rounded-lg border focus:ring-2 focus:ring-cyan-500 focus:outline-none transition-colors"
                   :class="[isDarkMode 
@@ -145,6 +155,14 @@
                     : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500']"
                   required
                 />
+                <button 
+                  type="button" 
+                  @click="showAdminPassword = !showAdminPassword"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                  :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                  <EyeIcon v-if="!showAdminPassword" class="h-5 w-5" />
+                  <EyeOffIcon v-else class="h-5 w-5" />
+                </button>
               </div>
             </div>
             <div class="pt-3 space-y-3">
@@ -187,7 +205,7 @@
 
 <script setup lang="ts">
 import { ref, inject } from 'vue'
-import { BoxIcon } from 'lucide-vue-next'
+import { BoxIcon, EyeIcon, EyeOffIcon } from 'lucide-vue-next'
 import axios, { AxiosError } from 'axios'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
@@ -201,6 +219,7 @@ const isLoading = ref(false)
 const isDarkMode = inject('isDarkMode')
 const adminStore = useAdminData()
 const router = useRouter()
+const showPassword = ref(false)
 
 // 游客访问函数
 const guestAccess = () => {
@@ -306,6 +325,7 @@ const showAdminDialog = ref(false)
 const adminEmail = ref('')
 const adminPassword = ref('')
 const adminLoading = ref(false)
+const showAdminPassword = ref(false)
 
 // 点击次数跟踪
 const clickCount = ref(0)

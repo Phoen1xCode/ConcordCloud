@@ -127,7 +127,7 @@
             </p>
           </div>
           <transition-group name="list" tag="div" class="space-y-4">
-            <div v-for="file in filteredFiles" :key="file.id"
+            <div v-for="file in paginatedFiles" :key="file.id"
               class="bg-opacity-50 rounded-lg p-4 flex items-center shadow-md hover:shadow-lg transition duration-300 transform hover:scale-102"
               :class="[isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-white']">
               <div class="flex-shrink-0 mr-4">
@@ -170,6 +170,33 @@
               </div>
             </div>
           </transition-group>
+          <!-- Add pagination controls -->
+          <div class="mt-6 flex justify-center" v-if="filteredFiles.length > filesPagination.pageSize">
+            <button @click="changePage(filesPagination.currentPage - 1)"
+              :disabled="filesPagination.currentPage === 1"
+              class="px-4 py-2 rounded-lg font-medium transition duration-300 border"
+              :class="[
+                isDarkMode 
+                  ? 'border-gray-700 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+              ]">
+              上一页
+            </button>
+            <span class="px-4 py-2 inline-flex items-center"
+              :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+              {{ filesPagination.currentPage }} / {{ totalFilePages }}
+            </span>
+            <button @click="changePage(filesPagination.currentPage + 1)"
+              :disabled="filesPagination.currentPage === totalFilePages"
+              class="px-4 py-2 rounded-lg font-medium transition duration-300 border"
+              :class="[
+                isDarkMode 
+                  ? 'border-gray-700 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-100'
+              ]">
+              下一页
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -374,7 +401,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, onMounted, computed } from 'vue'
+import { ref, inject, onMounted, computed, watch } from 'vue'
 import {
   UploadCloudIcon,
   SendIcon,
@@ -425,6 +452,12 @@ const fileToDelete = ref<FileItem | null>(null)
 const shareResult = ref<ShareResult | null>(null)
 const isCreatingShare = ref(false)
 
+// 添加分页相关状态
+const filesPagination = ref({
+  currentPage: 1,
+  pageSize: 6
+})
+
 // 重命名弹窗相关
 const showRenameDialog = ref(false)
 const fileToRename = ref<FileItem | null>(null)
@@ -447,6 +480,11 @@ const maxExpirationDate = computed(() => {
 // 添加搜索相关状态
 const searchQuery = ref('')
 
+// Watch searchQuery change and reset pagination
+watch(searchQuery, () => {
+  filesPagination.value.currentPage = 1
+})
+
 // 添加过滤后的文件列表计算属性
 const filteredFiles = computed(() => {
   if (!searchQuery.value) return userFiles.value
@@ -456,6 +494,23 @@ const filteredFiles = computed(() => {
     file.fileName.toLowerCase().includes(query)
   )
 })
+
+const paginatedFiles = computed(() => {
+  const start = (filesPagination.value.currentPage - 1) * filesPagination.value.pageSize
+  const end = start + filesPagination.value.pageSize
+  return filteredFiles.value.slice(start, end)
+})
+
+// 计算总页数
+const totalFilePages = computed(() => {
+  return Math.ceil(filteredFiles.value.length / filesPagination.value.pageSize)
+})
+
+// 翻页函数
+const changePage = (page: number) => {
+  if (page < 1 || page > totalFilePages.value) return
+  filesPagination.value.currentPage = page
+}
 
 const triggerFileUpload = () => {
   fileInput.value?.click()
