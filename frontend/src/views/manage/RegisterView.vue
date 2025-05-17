@@ -21,14 +21,14 @@
             'absolute inset-1 rounded-full flex items-center justify-center',
             isDarkMode ? 'bg-gray-800' : 'bg-white'
           ]">
-            <BoxIcon :class="['h-8 w-8', isDarkMode ? 'text-cyan-400' : 'text-cyan-600']" />
+            <UserPlusIcon :class="['h-8 w-8', isDarkMode ? 'text-cyan-400' : 'text-cyan-600']" />
           </div>
         </div>
         <h2 :class="[
           'mt-6 text-center text-3xl font-extrabold',
           isDarkMode ? 'text-white' : 'text-gray-900'
         ]">
-          登录
+          注册账号
         </h2>
       </div>
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
@@ -46,15 +46,26 @@
           </div>
           <div>
             <label for="password" class="sr-only">密码</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required
+            <input id="password" name="password" type="password" autocomplete="new-password" required
               v-model="password" :class="[
-                'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                'appearance-none relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
                 isDarkMode
                   ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
                   : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
               ]" placeholder="密码" />
           </div>
+          <div>
+            <label for="confirmPassword" class="sr-only">确认密码</label>
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required
+              v-model="confirmPassword" :class="[
+                'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                isDarkMode
+                  ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+                  : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+              ]" placeholder="确认密码" />
+          </div>
         </div>
+        
         <div>
           <button type="submit" :class="[
             'group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 shadow-lg hover:shadow-cyan-500/50',
@@ -64,27 +75,15 @@
             isLoading ? 'opacity-75 cursor-not-allowed' : ''
           ]" :disabled="isLoading">
             <span class="absolute left-0 inset-y-0 flex items-center pl-3"> </span>
-            {{ isLoading ? '登录中...' : '登录' }}
-          </button>
-        </div>
-        
-        <!-- 游客访问按钮 -->
-        <div>
-          <button type="button" @click="guestAccess" :class="[
-            'group relative w-full flex justify-center py-3 px-4 border text-sm font-medium rounded-md transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 shadow-md',
-            isDarkMode
-              ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600'
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
-          ]">
-            游客访问（直接取件）
+            {{ isLoading ? '注册中...' : '创建账号' }}
           </button>
         </div>
         
         <div class="flex items-center justify-center">
           <div :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-            还没有账号？
-            <router-link to="/register" class="font-medium text-cyan-500 hover:text-cyan-400">
-              立即注册
+            已有账号？
+            <router-link to="/login" class="font-medium text-cyan-500 hover:text-cyan-400">
+              前往登录
             </router-link>
           </div>
         </div>
@@ -95,25 +94,19 @@
 
 <script setup lang="ts">
 import { ref, inject } from 'vue'
-import { BoxIcon } from 'lucide-vue-next'
+import { UserPlusIcon } from 'lucide-vue-next'
 import axios, { AxiosError } from 'axios'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
-import { useAdminData } from '@/stores/adminStore'
 import { useRouter } from 'vue-router'
 
 const alertStore = useAlertStore()
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const isLoading = ref(false)
 const isDarkMode = inject('isDarkMode')
-const adminStore = useAdminData()
 const router = useRouter()
-
-// 游客访问函数
-const guestAccess = () => {
-  router.push('/retrieve')
-}
 
 const validateEmail = (email: string) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -122,6 +115,8 @@ const validateEmail = (email: string) => {
 
 const validateForm = () => {
   let isValid = true
+  
+  // 验证邮箱
   if (!email.value) {
     alertStore.showAlert('请输入有效的邮箱', 'error')
     isValid = false
@@ -129,60 +124,58 @@ const validateForm = () => {
     alertStore.showAlert('请输入有效的邮箱地址', 'error')
     isValid = false
   }
+  
+  // 验证密码
   if (!password.value) {
-    alertStore.showAlert('无效的密码', 'error')
+    alertStore.showAlert('请输入密码', 'error')
     isValid = false
   } else if (password.value.length < 6) {
     alertStore.showAlert('密码长度至少为6位', 'error')
     isValid = false
   }
+  
+  // 验证确认密码
+  if (password.value !== confirmPassword.value) {
+    alertStore.showAlert('两次输入的密码不一致', 'error')
+    isValid = false
+  }
+  
   return isValid
 }
+
 const handleSubmit = async () => {
   if (!validateForm()) {
     console.log('表单验证未通过');
     return;
   }
+  
   isLoading.value = true;
   try {
-    console.log('开始发送登录请求');
+    console.log('开始发送注册请求');
     
     // 构建请求数据
     const requestData = {
       email: email.value,
-      password: password.value
+      password: password.value,
+      confirmPassword: confirmPassword.value
     };
     console.log('请求数据:', requestData);
     
     // 使用 api 实例发送请求
-    const response = await api.post('/api/user/login', requestData);
+    const response = await api.post('/api/User/register', requestData);
     
-    console.log('登录请求已发送，完整响应:', response);
+    console.log('注册请求已发送，完整响应:', response);
     console.log('响应数据:', response);
 
+    // 处理成功响应
     if (response.success) {
-      // 请求成功，显示成功信息并跳转
-      alertStore.showAlert('登录成功', 'success');
-      console.log('登录请求成功，准备跳转到 /send 页面');
-      
-      // 如果需要保存用户数据
-      if (response.data?.user) {
-        // 存储用户数据
-        localStorage.setItem('userData', JSON.stringify(response.data.user));
-      }
-      
-      // 添加登录标志
-      localStorage.setItem('token', 'loggedIn');
-      localStorage.setItem('isLoggedIn', 'true');
-      
-      router.push('/send');
+      alertStore.showAlert('✅ 注册成功！请登录', 'success');
+      router.push('/login');
     } else {
-      // 请求未成功，显示错误信息
-      console.log('登录请求未成功');
-      alertStore.showAlert(response.message || '登录请求未成功，请稍后重试', 'error');
+      alertStore.showAlert('❌ ' + (response.message || '注册失败，请稍后重试'), 'error');
     }
   } catch (error) {
-    console.error('登录请求出错:', error);
+    console.error('注册请求出错:', error);
     
     const axiosError = error as AxiosError;
     
@@ -192,7 +185,7 @@ const handleSubmit = async () => {
       // 提取并显示具体的错误信息
       const errorData = axiosError.response.data as any;
       const errorMessage = errorData?.message || 
-                          (typeof errorData === 'object' ? JSON.stringify(errorData) : '登录请求出错，请稍后重试');
+                          (typeof errorData === 'object' ? JSON.stringify(errorData) : '注册请求出错，请稍后重试');
       alertStore.showAlert(errorMessage, 'error');
     } else if (axiosError.request) {
       // 请求已发出但未收到响应
@@ -297,4 +290,4 @@ button:hover:not(:disabled) {
 .fade-leave-active {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
-</style>    
+</style> 

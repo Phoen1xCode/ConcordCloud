@@ -104,10 +104,17 @@
           </div>
           
           <div v-if="!selectedFile" class="mt-6 text-center">
-            <router-link to="/send" class="text-indigo-400 hover:text-indigo-300 transition duration-300 flex items-center justify-center">
+            <router-link v-if="isLoggedIn" to="/send" class="text-indigo-400 hover:text-indigo-300 transition duration-300 flex items-center justify-center">
               去上传文件
               <UploadIcon class="w-4 h-4 ml-1" />
             </router-link>
+            <button
+              v-if="!isLoggedIn"
+              @click="router.push('/login')"
+              class="mt-4 w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-105"
+            >
+              返回登录界面
+            </button>
           </div>
         </div>
         
@@ -141,6 +148,23 @@
             <XIcon class="w-6 h-6" />
           </button>
         </div>
+        <div class="px-6 pb-4">
+          <div class="relative">
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="搜索文件..." 
+              class="w-full px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2"
+              :class="[
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-indigo-500'
+              ]"
+            />
+            <SearchIcon class="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2" 
+              :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
+          </div>
+        </div>
         <div class="flex-grow overflow-y-auto p-6">
           <div v-if="isLoadingFiles" class="flex justify-center items-center h-full">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2" 
@@ -163,7 +187,7 @@
             </p>
           </div>
           <transition-group name="list" tag="div" class="space-y-4">
-            <div v-for="file in userFiles" :key="file.id"
+            <div v-for="file in filteredFiles" :key="file.id"
               class="bg-opacity-50 rounded-lg p-4 flex items-center shadow-md hover:shadow-lg transition duration-300 transform hover:scale-102"
               :class="[isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-white']">
               <div class="flex-shrink-0 mr-4">
@@ -219,7 +243,8 @@ import {
   ShieldCheckIcon,
   LockIcon,
   LogOutIcon,
-  UploadIcon
+  UploadIcon,
+  SearchIcon
 } from 'lucide-vue-next'
 import { useRouter, useRoute } from 'vue-router'
 import { useAlertStore } from '@/stores/alertStore'
@@ -243,6 +268,19 @@ const showDrawer = ref(false)
 const userFiles = ref([])
 const isLoadingFiles = ref(false)
 const isLoggedIn = computed(() => localStorage.getItem('isLoggedIn') === 'true')
+
+// 添加搜索相关状态
+const searchQuery = ref('')
+
+// 添加过滤后的文件列表计算属性
+const filteredFiles = computed(() => {
+  if (!searchQuery.value) return userFiles.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return userFiles.value.filter(file => 
+    file.fileName.toLowerCase().includes(query)
+  )
+})
 
 // 初始化时检查URL参数
 const initFromQuery = () => {
@@ -291,7 +329,7 @@ const handleSubmit = async () => {
       withCredentials: true
     })
 
-    if (response.status === 200 && response.data.success) {
+    if (response.data && response.data.success) {
       selectedFile.value = response.data.file
       alertStore.showAlert('文件找到，可以开始下载', 'success')
     } else {
