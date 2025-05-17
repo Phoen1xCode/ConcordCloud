@@ -146,11 +146,6 @@ const handleSubmit = async () => {
   isLoading.value = true;
   try {
     console.log('开始发送登录请求');
-    // 先配置axios默认设置，确保所有请求都包含凭据
-    axios.defaults.withCredentials = true;
-    
-    const apiUrl = 'https://localhost:5001/api/user/login';
-    console.log('请求URL:', apiUrl);
     
     // 构建请求数据
     const requestData = {
@@ -159,25 +154,19 @@ const handleSubmit = async () => {
     };
     console.log('请求数据:', requestData);
     
-    // 使用axios默认实例发送请求
-    const response = await axios.post(apiUrl, requestData, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true // 确保接收和存储Cookie
-    });
+    // 使用 api 实例发送请求
+    const response = await api.post('/api/user/login', requestData);
     
     console.log('登录请求已发送，完整响应:', response);
-    console.log('响应状态码:', response.status);
-    console.log('响应数据:', response.data);
+    console.log('响应数据:', response);
 
-    if (response.status === 200) {
+    if (response.success) {
       // 请求成功，显示成功信息并跳转
       alertStore.showAlert('登录成功', 'success');
       console.log('登录请求成功，准备跳转到 /send 页面');
       
       // 如果需要保存用户数据
-      if (response.data.user) {
+      if (response.data?.user) {
         // 存储用户数据
         localStorage.setItem('userData', JSON.stringify(response.data.user));
       }
@@ -189,8 +178,8 @@ const handleSubmit = async () => {
       router.push('/send');
     } else {
       // 请求未成功，显示错误信息
-      console.log('登录请求未成功，状态码:', response.status);
-      alertStore.showAlert(response.data?.message || '登录请求未成功，请稍后重试', 'error');
+      console.log('登录请求未成功');
+      alertStore.showAlert(response.message || '登录请求未成功，请稍后重试', 'error');
     }
   } catch (error) {
     console.error('登录请求出错:', error);

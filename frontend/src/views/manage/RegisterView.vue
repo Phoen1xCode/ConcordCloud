@@ -152,7 +152,6 @@ const handleSubmit = async () => {
   isLoading.value = true;
   try {
     console.log('开始发送注册请求');
-    console.log('请求URL:', `${api.defaults.baseURL}/api/User/register`);
     
     // 构建请求数据
     const requestData = {
@@ -162,28 +161,18 @@ const handleSubmit = async () => {
     };
     console.log('请求数据:', requestData);
     
-    // 使用axios直接发送请求，而不是通过自定义的api接口
-    const response = await axios({
-      method: 'post',
-      url: `${api.defaults.baseURL}/api/User/register`,
-      data: requestData,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    // 使用 api 实例发送请求
+    const response = await api.post('/api/User/register', requestData);
     
     console.log('注册请求已发送，完整响应:', response);
-    console.log('响应状态码:', response.status);
-    console.log('响应数据:', response.data);
+    console.log('响应数据:', response);
 
     // 处理成功响应
-    if (response.status === 200) {
-      alertStore.showAlert('注册成功，请登录', 'success');
-      console.log('注册请求成功，准备跳转到登录页面');
+    if (response.success) {
+      alertStore.showAlert('✅ 注册成功！请登录', 'success');
       router.push('/login');
     } else {
-      console.log('注册请求未成功，状态码:', response.status);
-      alertStore.showAlert(response.data?.message || '注册请求未成功，请稍后重试', 'error');
+      alertStore.showAlert('❌ ' + (response.message || '注册失败，请稍后重试'), 'error');
     }
   } catch (error) {
     console.error('注册请求出错:', error);

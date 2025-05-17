@@ -97,6 +97,24 @@
             <XIcon class="w-6 h-6" />
           </button>
         </div>
+        <!-- 添加搜索框 -->
+        <div class="px-6 pb-4">
+          <div class="relative">
+            <input 
+              type="text" 
+              v-model="searchQuery" 
+              placeholder="搜索文件..." 
+              class="w-full px-4 py-2 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2"
+              :class="[
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-indigo-500' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-indigo-500'
+              ]"
+            />
+            <SearchIcon class="w-5 h-5 absolute right-3 top-1/2 transform -translate-y-1/2" 
+              :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
+          </div>
+        </div>
         <div class="flex-grow overflow-y-auto p-6">
           <div v-if="isLoadingFiles" class="flex justify-center items-center h-full">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2" 
@@ -109,7 +127,7 @@
             </p>
           </div>
           <transition-group name="list" tag="div" class="space-y-4">
-            <div v-for="file in userFiles" :key="file.id"
+            <div v-for="file in filteredFiles" :key="file.id"
               class="bg-opacity-50 rounded-lg p-4 flex items-center shadow-md hover:shadow-lg transition duration-300 transform hover:scale-102"
               :class="[isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-white']">
               <div class="flex-shrink-0 mr-4">
@@ -369,14 +387,16 @@ import {
   ClipboardCopyIcon,
   LogOutIcon,
   Share2Icon,
-  PencilIcon
+  PencilIcon,
+  SearchIcon
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
 import { useFileDataStore } from '@/stores/fileData'
 import { copyRetrieveLink, copyRetrieveCode } from '@/utils/clipboard'
 import { getStorageUnit } from '@/utils/convert'
-import axios from 'axios'
+import api from '@/utils/api'
+import { useAlertStore } from '@/stores/alertStore'
 
 const config: any = JSON.parse(localStorage.getItem('config') || '{}')
 
@@ -389,7 +409,6 @@ const selectedFile = ref<FileItem | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploadProgress = ref(0)
 const showDrawer = ref(false)
-import { useAlertStore } from '@/stores/alertStore'
 
 const alertStore = useAlertStore()
 const sendRecords = computed(() => fileDataStore.shareData)
@@ -423,6 +442,19 @@ const maxExpirationDate = computed(() => {
   const maxDate = new Date(today)
   maxDate.setDate(today.getDate() + maxDays)
   return maxDate.toISOString().split('T')[0]
+})
+
+// 添加搜索相关状态
+const searchQuery = ref('')
+
+// 添加过滤后的文件列表计算属性
+const filteredFiles = computed(() => {
+  if (!searchQuery.value) return userFiles.value
+  
+  const query = searchQuery.value.toLowerCase()
+  return userFiles.value.filter(file => 
+    file.fileName.toLowerCase().includes(query)
+  )
 })
 
 const triggerFileUpload = () => {
@@ -619,25 +651,21 @@ const handleDirectFileUpload = async (file: File): Promise<void> => {
     const formData = new FormData();
     formData.append('file', file);
     
-    // 确保axios默认设置包含凭据
-    axios.defaults.withCredentials = true;
-    
     // 发送文件上传请求
-    const response = await axios.post('https://localhost:5001/api/file/upload', formData, {
+    const response = await api.post('/api/file/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      withCredentials: true,
       onUploadProgress: (progressEvent: any) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
         uploadProgress.value = percentCompleted;
       }
     });
     
-    console.log('文件上传响应:', response.data);
+    console.log('文件上传响应:', response);
     
     // 处理响应
-    if (response.data && response.data.success) {
+    if (response.success) {
       // 文件上传成功，提示用户并重置表单
       alertStore.showAlert(`文件上传成功！您可以在文件管理中查看和分享该文件`, 'success');
       
@@ -649,7 +677,7 @@ const handleDirectFileUpload = async (file: File): Promise<void> => {
       showDrawer.value = true;
       await fetchUserFiles(); // 等待文件列表刷新完成
     } else {
-      throw new Error(response.data?.message || '文件上传失败');
+      throw new Error(response.message || '文件上传失败');
     }
   } catch (error: any) {
     // 简化错误处理
@@ -692,14 +720,9 @@ const logout = async () => {
   alertStore.showAlert('正在退出登录...', 'info')
   
   try {
-    // 确保axios默认设置包含凭据
-    axios.defaults.withCredentials = true;
-    
     // 调用登出API
-    console.log('Calling logout API at: https://localhost:5001/api/user/logout')
-    await axios.post('https://localhost:5001/api/user/logout', {}, {
-      withCredentials: true // 确保发送认证Cookie
-    })
+    console.log('Calling logout API')
+    await api.post('/api/user/logout')
     
     // 清除本地登录状态标志
     localStorage.removeItem('token')
@@ -769,23 +792,21 @@ const checkFileSize = (file: File) => {
 const fetchUserFiles = async () => {
   try {
     isLoadingFiles.value = true
-    const response = await axios.get('https://localhost:5001/api/file', {
-      withCredentials: true
-    })
+    const response = await api.get('/api/file')
     
-    console.log('获取文件列表响应:', response.data)
+    console.log('获取文件列表响应:', response)
     
-    if (response.data && response.data.success) {
+    if (response.success) {
       // 兼容 .NET 返回的 $values 数组
-      if (Array.isArray(response.data.data)) {
-        userFiles.value = response.data.data
-      } else if (response.data.data && Array.isArray(response.data.data.$values)) {
-        userFiles.value = response.data.data.$values
-      } else if (response.data.files) {
-        userFiles.value = response.data.files
+      if (Array.isArray(response.data)) {
+        userFiles.value = response.data
+      } else if (response.data && Array.isArray(response.data.$values)) {
+        userFiles.value = response.data.$values
+      } else if (response.files) {
+        userFiles.value = response.files
       } else {
         userFiles.value = []
-        console.warn('文件列表数据格式不正确:', response.data)
+        console.warn('文件列表数据格式不正确:', response)
       }
     } else {
       userFiles.value = []
@@ -889,33 +910,26 @@ const createFileShare = async () => {
     expirationDays = Math.max(1, Math.round(expirationDays));
     
     // 创建分享
-    const response = await axios.post('https://localhost:5001/api/file/share', {
+    const response = await api.post('/api/file/share', {
       fileId: selectedFile.value.id,
       expirationDays: expirationDays
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true
     });
     
-    if (response.data && response.data.success) {
+    if (response.success) {
       // 兼容不同后端返回结构
-      if (response.data.share) {
-        shareResult.value = response.data.share
-      } else if (response.data.data) {
-        shareResult.value = response.data.data
-      } else {
+      if (response.share) {
+        shareResult.value = response.share
+      } else if (response.data) {
         shareResult.value = response.data
+      } else {
+        shareResult.value = response
       }
       // 自动弹出分享弹窗
       showShareDialog.value = true
-      // 可选：存储到本地
-      // localStorage.setItem('lastShareCode', shareResult.value.shareCode)
       alertStore.showAlert('创建分享成功', 'success')
       fetchUserFiles()
     } else {
-      throw new Error(response.data?.message || '创建分享失败');
+      throw new Error(response.message || '创建分享失败');
     }
   } catch (error: any) {
     let errorMessage = '创建分享失败，请稍后重试';
@@ -973,14 +987,9 @@ const confirmRename = async () => {
       newFileName: newFileName.value
     };
     
-    const response = await axios.put('https://localhost:5001/api/file/rename', requestData, { 
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true 
-    });
+    const response = await api.put('/api/file/rename', requestData);
     
-    if (response.data && response.data.success) {
+    if (response.success) {
       // 更新文件列表中的文件名
       const targetFile = userFiles.value.find(f => f.id === fileToRename.value!.id);
       if (targetFile) {
@@ -989,7 +998,7 @@ const confirmRename = async () => {
       alertStore.showAlert('重命名成功', 'success');
       closeRenameDialog();
     } else {
-      throw new Error(response.data?.message || '重命名失败')
+      throw new Error(response.message || '重命名失败')
     }
   } catch (error: any) {
     let errorMessage = '重命名失败，请稍后重试'
@@ -1030,16 +1039,14 @@ const deleteFile = async () => {
   if (!fileToDelete.value) return
   
   try {
-    const response = await axios.delete(`https://localhost:5001/api/file/${fileToDelete.value.id}`, {
-      withCredentials: true
-    });
+    const response = await api.delete(`/api/file/${fileToDelete.value.id}`);
     
-    if (response.data && response.data.success) {
+    if (response.success) {
       // 从列表中移除文件
       userFiles.value = userFiles.value.filter(f => f.id !== fileToDelete.value!.id)
       alertStore.showAlert('文件删除成功', 'success')
     } else {
-      throw new Error(response.data?.message || '删除文件失败')
+      throw new Error(response.message || '删除文件失败')
     }
   } catch (error: any) {
     let errorMessage = '删除失败，请稍后重试'

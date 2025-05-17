@@ -1,5 +1,20 @@
 import axios from 'axios';
+import type { AxiosInstance, AxiosResponse } from 'axios';
 import router from '@/router'; // 引入你的路由实例
+
+// 定义 API 响应类型
+interface ApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data?: T;
+  code?: number;
+  files?: any[];
+  share?: {
+    shareCode: string;
+    fileName: string;
+    expiresAt: string;
+  };
+}
 
 // 从环境变量中获取 API 基础 URL
 const baseURL = 
@@ -11,7 +26,7 @@ const baseURL =
 const sanitizedBaseURL = typeof baseURL === 'string' ? baseURL : '';
 
 // 创建 axios 实例
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: sanitizedBaseURL,
   timeout: 30000, // 请求超时时间30秒
   withCredentials: true, // 关键: 启用携带 Cookie
@@ -30,8 +45,9 @@ api.interceptors.request.use(
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response) => {
-    return response.data; // 直接返回响应体
+  (response: AxiosResponse): any => {
+    // 直接返回响应体，并确保类型正确
+    return response.data;
   },
   (error) => {
     // 处理重定向错误（后端返回302/307时）
@@ -71,5 +87,15 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// 扩展 axios 实例类型
+declare module 'axios' {
+  interface AxiosInstance {
+    get<T = any>(url: string, config?: any): Promise<ApiResponse<T>>;
+    post<T = any>(url: string, data?: any, config?: any): Promise<ApiResponse<T>>;
+    put<T = any>(url: string, data?: any, config?: any): Promise<ApiResponse<T>>;
+    delete<T = any>(url: string, config?: any): Promise<ApiResponse<T>>;
+  }
+}
 
 export default api;
