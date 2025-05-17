@@ -10,8 +10,8 @@ namespace ConcordCloud.Core.Interfaces
     {
         DbSet<User> Users { get; set; }
         DbSet<UserFile> Files { get; set; }
-        DbSet<Entities.FileShare> FileShares { get; set; }
-        
+        DbSet<ShareFile> ShareFiles { get; set; }
+        DbSet<Admin> Admins { get; set; }
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 } 

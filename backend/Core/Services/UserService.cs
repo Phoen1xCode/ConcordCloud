@@ -18,21 +18,22 @@ namespace ConcordCloud.Core.Services
             _dbContext = dbContext;
         }
         
-        public async Task<(bool Success, string Message, UserDto User)> RegisterAsync(UserRegisterDto registerDto)
+        // register user
+        public async Task<(bool Success, string Message, UserDto? User)> RegisterAsync(UserRegisterDto registerDto)
         {
-            // 检查邮箱是否已被使用
+            // check if the email has been used
             if (await _dbContext.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                return (false, "该邮箱已被注册", null);
+                return (false, "The email has been used.", null);
             }
 
-            // 验证密码是否一致
+            // check if the password is consistent
             if (registerDto.Password != registerDto.ConfirmPassword)
             {
-                return (false, "两次输入的密码不一致", null);
+                return (false, "The password is not consistent.", null);
             }
 
-            // 创建用户实体
+            // create user entity 
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -42,12 +43,12 @@ namespace ConcordCloud.Core.Services
                 Role = UserRole.User
             };
 
-            // 保存到数据库
+            // save to database
             await _dbContext.Users.AddAsync(user);
             await _dbContext.SaveChangesAsync();
 
-            // 返回结果
-            return (true, "注册成功", new UserDto
+            // return the result
+            return (true, "Register successfully", new UserDto
             {
                 Id = user.Id,
                 Email = user.Email,
@@ -56,27 +57,29 @@ namespace ConcordCloud.Core.Services
             });
         }
 
-        public async Task<(bool Success, string Message, UserDto User)> LoginAsync(UserLoginDto loginDto)
+        // login user   
+        public async Task<(bool Success, string Message, UserDto? User)> LoginAsync(UserLoginDto loginDto)
         {
-            // 查找用户
+            // find user
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            
             if (user == null)
             {
-                return (false, "用户不存在", null);
+                return (false, "User does not exist.", null);
             }
 
-            // 验证密码
+            // check if the password is correct
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             {
-                return (false, "密码错误", null);
+                return (false, "The password is incorrect.", null);
             }
 
-            // 更新最后登录时间
+            // update the last login time
             user.LastLoginAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
 
-            // 返回结果
-            return (true, "登录成功", new UserDto
+            // return the result
+            return (true, "Login successfully", new UserDto
             {
                 Id = user.Id,
                 Email = user.Email,
@@ -85,7 +88,8 @@ namespace ConcordCloud.Core.Services
             });
         }
 
-        public async Task<UserDto> GetUserByIdAsync(Guid userId)
+        // get user by id
+        public async Task<UserDto?> GetUserByIdAsync(Guid userId)
         {
             var user = await _dbContext.Users.FindAsync(userId);
             if (user == null)
@@ -101,12 +105,5 @@ namespace ConcordCloud.Core.Services
                 CreatedAt = user.CreatedAt
             };
         }
-
-        public async Task<bool> IsAdmin(Guid userId)
-        {
-            var user = await _dbContext.Users.FindAsync(userId);
-            return user != null && user.Role == UserRole.Admin;
-        }
-
     }
 } 

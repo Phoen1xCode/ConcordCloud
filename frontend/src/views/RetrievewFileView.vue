@@ -43,7 +43,7 @@
                 class="absolute -bottom-0.5 left-2 h-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-300 ease-in-out"
                 :class="{ 'w-97-100': isInputFocused, 'w-0': !isInputFocused }"></div>
             </div>
-            <button @click="handleSubmit"
+            <button @click="downloadFileByShareCode"
               class="w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-105 hover:shadow-lg relative overflow-hidden group"
               :disabled="inputStatus.loading || !shareCode">
               <span class="flex items-center justify-center relative z-10">
@@ -285,14 +285,11 @@ const handleSubmit = async () => {
   error.value = false
 
   try {
-    console.log('Retrieving file info for share code:', shareCode.value)
-    // 使用正确的API URL获取分享文件的元数据信息
-    const response = await axios.get(`https://localhost:5001/api/File/shared/${shareCode.value}/info`, {
+    // 先获取文件元信息
+    const response = await axios.get(`https://localhost:5001/api/file/shared/${shareCode.value}/info`, {
       validateStatus: status => status < 500,
       withCredentials: true
     })
-
-    console.log('File info response:', response)
 
     if (response.status === 200 && response.data.success) {
       selectedFile.value = response.data.file
@@ -314,6 +311,60 @@ const handleSubmit = async () => {
   }
 }
 
+// 分享码直接下载文件
+const downloadFileByShareCode = async () => {
+  if (!shareCode.value) {
+    alertStore.showAlert('请输入分享码', 'error')
+    return
+  }
+
+  isDownloading.value = true
+
+  try {
+    const response = await axios({
+      url: `https://localhost:5001/api/file/shared/${shareCode.value}`,
+      method: 'GET',
+      responseType: 'blob',
+      withCredentials: true
+    })
+
+    // 尝试从响应头获取文件名
+    let fileName = shareCode.value
+    const disposition = response.headers['content-disposition']
+    if (disposition) {
+      const match = disposition.match(/filename="?([^";]+)"?/)
+      if (match && match[1]) {
+        fileName = decodeURIComponent(match[1])
+      }
+    }
+
+    // 创建Blob链接并触发下载
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+
+    alertStore.showAlert('文件下载成功', 'success')
+  } catch (err) {
+    let errorMessage = '文件下载失败，请稍后重试'
+    if (err.response) {
+      if (err.response.status === 404) {
+        errorMessage = '文件不存在或已过期'
+      } else if (err.response.data?.message) {
+        errorMessage = err.response.data.message
+      }
+    } else if (err.message && err.message.includes('Network Error')) {
+      errorMessage = '网络错误，请检查后端API是否正在运行'
+    }
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    isDownloading.value = false
+  }
+}
+
 // 下载文件
 const downloadFile = async () => {
   if (!selectedFile.value) return
@@ -321,16 +372,12 @@ const downloadFile = async () => {
   isDownloading.value = true
   
   try {
-    console.log('Downloading file with share code:', shareCode.value)
-    // 使用正确的API URL下载文件
     const response = await axios({
-      url: `https://localhost:5001/api/File/shared/${shareCode.value}`,
+      url: `https://localhost:5001/api/file/shared/${shareCode.value}`,
       method: 'GET',
       responseType: 'blob',
       withCredentials: true
-    })
-    
-    console.log('File download successful')
+    });
     
     // 创建Blob链接并触发下载
     const url = window.URL.createObjectURL(new Blob([response.data]))
@@ -343,16 +390,23 @@ const downloadFile = async () => {
     
     alertStore.showAlert('文件下载成功', 'success')
   } catch (err) {
-    console.error('文件下载失败:', err)
-    if (err.message && err.message.includes('Network Error')) {
-      alertStore.showAlert('网络错误，请检查后端API是否正在运行', 'error')
-    } else if (err.response && err.response.status === 401) {
-      alertStore.showAlert('下载需要登录', 'error')
-    } else {
-      alertStore.showAlert('文件下载失败，请稍后重试', 'error')
+    let errorMessage = '文件下载失败，请稍后重试';
+    
+    if (err.response) {
+      if (err.response.status === 401) {
+        errorMessage = '下载需要登录';
+      } else if (err.response.status === 404) {
+        errorMessage = '文件不存在或已过期';
+      } else if (err.response.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+    } else if (err.message && err.message.includes('Network Error')) {
+      errorMessage = '网络错误，请检查后端API是否正在运行';
     }
+    
+    alertStore.showAlert(errorMessage, 'error');
   } finally {
-    isDownloading.value = false
+    isDownloading.value = false;
   }
 }
 
@@ -365,14 +419,13 @@ const downloadFileById = async (fileId, fileName) => {
   
   try {
     alertStore.showAlert('开始下载文件...', 'info')
-    console.log(`Downloading file by ID: ${fileId}`)
     
     const response = await axios({
-      url: `https://localhost:5001/api/File/download/${fileId}`,
+      url: `https://localhost:5001/api/file/download/${fileId}`,
       method: 'GET',
       responseType: 'blob',
       withCredentials: true
-    })
+    });
     
     // 创建Blob链接并触发下载
     const url = window.URL.createObjectURL(new Blob([response.data]))
@@ -385,15 +438,22 @@ const downloadFileById = async (fileId, fileName) => {
     
     alertStore.showAlert('文件下载成功', 'success')
   } catch (err) {
-    console.error('通过ID下载文件失败:', err)
-    if (err.response && err.response.status === 401) {
-      alertStore.showAlert('下载需要登录，请先登录', 'error')
-      router.push('/login')
+    let errorMessage = '文件下载失败，请稍后重试';
+    
+    if (err.response) {
+      if (err.response.status === 401) {
+        errorMessage = '下载需要登录，请先登录';
+        router.push('/login');
+      } else if (err.response.status === 404) {
+        errorMessage = '文件不存在';
+      } else if (err.response.data?.message) {
+        errorMessage = err.response.data.message;
+      }
     } else if (err.message && err.message.includes('Network Error')) {
-      alertStore.showAlert('网络错误，请检查后端API是否正在运行', 'error')
-    } else {
-      alertStore.showAlert('文件下载失败，请稍后重试', 'error')
+      errorMessage = '网络错误，请检查后端API是否正在运行';
     }
+    
+    alertStore.showAlert(errorMessage, 'error');
   }
 }
 
@@ -414,25 +474,41 @@ const toggleDrawer = () => {
 
 // 获取用户文件列表
 const fetchUserFiles = async () => {
-  if (!isLoggedIn.value) return
-  
   try {
     isLoadingFiles.value = true
-    const response = await axios.get('https://localhost:5001/api/File', {
+    const response = await axios.get('https://localhost:5001/api/file', {
       withCredentials: true
     })
-    
+    console.log('获取文件列表响应:', response.data)
     if (response.data && response.data.success) {
-      userFiles.value = response.data.files
+      if (Array.isArray(response.data.data)) {
+        userFiles.value = response.data.data
+      } else if (response.data.data && Array.isArray(response.data.data.$values)) {
+        userFiles.value = response.data.data.$values
+      } else if (response.data.files) {
+        userFiles.value = response.data.files
+      } else {
+        userFiles.value = []
+        console.warn('文件列表数据格式不正确:', response.data)
+      }
     } else {
+      userFiles.value = []
       alertStore.showAlert('获取文件列表失败', 'error')
     }
   } catch (error) {
     console.error('获取文件列表出错:', error)
-    if (error.response && error.response.status === 401) {
-      alertStore.showAlert('获取文件列表需要登录', 'error')
+    userFiles.value = []
+    if (error.response) {
+      if (error.response.status === 401) {
+        alertStore.showAlert('请先登录', 'error')
+        router.push('/login')
+      } else if (error.response.data?.message) {
+        alertStore.showAlert(error.response.data.message, 'error')
+      } else {
+        alertStore.showAlert('获取文件列表失败', 'error')
+      }
     } else {
-      alertStore.showAlert('获取文件列表失败', 'error')
+      alertStore.showAlert('获取文件列表失败，请检查网络连接', 'error')
     }
   } finally {
     isLoadingFiles.value = false
@@ -449,8 +525,8 @@ const logout = async () => {
     axios.defaults.withCredentials = true;
     
     // 调用登出API
-    console.log('Calling logout API at: https://localhost:5001/api/User/logout')
-    await axios.post('https://localhost:5001/api/User/logout', {}, {
+    console.log('Calling logout API at: https://localhost:5001/api/user/logout')
+    await axios.post('https://localhost:5001/api/user/logout', {}, {
       withCredentials: true // 确保发送认证Cookie
     })
     

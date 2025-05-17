@@ -621,9 +621,9 @@ const handleDirectFileUpload = async (file: File): Promise<void> => {
     
     // 确保axios默认设置包含凭据
     axios.defaults.withCredentials = true;
-    console.log(axios.defaults.withCredentials);
+    
     // 发送文件上传请求
-    const response = await axios.post('https://localhost:5001/api/File/upload', formData, {
+    const response = await axios.post('https://localhost:5001/api/file/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
@@ -634,9 +634,10 @@ const handleDirectFileUpload = async (file: File): Promise<void> => {
       }
     });
     
+    console.log('文件上传响应:', response.data);
+    
     // 处理响应
     if (response.data && response.data.success) {
-      console.log("文件id", response.data.file.id);
       // 文件上传成功，提示用户并重置表单
       alertStore.showAlert(`文件上传成功！您可以在文件管理中查看和分享该文件`, 'success');
       
@@ -645,12 +646,8 @@ const handleDirectFileUpload = async (file: File): Promise<void> => {
       uploadProgress.value = 0;
       
       // 打开文件管理抽屉并刷新文件列表
-      if (!showDrawer.value) {
-        showDrawer.value = true;
-        fetchUserFiles();
-      } else {
-        fetchUserFiles();
-      }
+      showDrawer.value = true;
+      await fetchUserFiles(); // 等待文件列表刷新完成
     } else {
       throw new Error(response.data?.message || '文件上传失败');
     }
@@ -699,8 +696,8 @@ const logout = async () => {
     axios.defaults.withCredentials = true;
     
     // 调用登出API
-    console.log('Calling logout API at: https://localhost:5001/api/User/logout')
-    await axios.post('https://localhost:5001/api/User/logout', {}, {
+    console.log('Calling logout API at: https://localhost:5001/api/user/logout')
+    await axios.post('https://localhost:5001/api/user/logout', {}, {
       withCredentials: true // 确保发送认证Cookie
     })
     
@@ -723,6 +720,9 @@ const logout = async () => {
 onMounted(() => {
   // 这里可以放置一些非立即需要的初始化代码
   console.log('SendFileView mounted')
+  if (localStorage.getItem('isLoggedIn') === 'true') {
+    fetchUserFiles()
+  }
 })
 
 /**
@@ -769,18 +769,44 @@ const checkFileSize = (file: File) => {
 const fetchUserFiles = async () => {
   try {
     isLoadingFiles.value = true
-    const response = await axios.get('https://localhost:5001/api/File', {
+    const response = await axios.get('https://localhost:5001/api/file', {
       withCredentials: true
     })
     
+    console.log('获取文件列表响应:', response.data)
+    
     if (response.data && response.data.success) {
-      userFiles.value = response.data.files
+      // 兼容 .NET 返回的 $values 数组
+      if (Array.isArray(response.data.data)) {
+        userFiles.value = response.data.data
+      } else if (response.data.data && Array.isArray(response.data.data.$values)) {
+        userFiles.value = response.data.data.$values
+      } else if (response.data.files) {
+        userFiles.value = response.data.files
+      } else {
+        userFiles.value = []
+        console.warn('文件列表数据格式不正确:', response.data)
+      }
     } else {
+      userFiles.value = []
       alertStore.showAlert('获取文件列表失败', 'error')
     }
   } catch (error: any) {
     console.error('获取文件列表出错:', error)
-    alertStore.showAlert('获取文件列表失败', 'error')
+    userFiles.value = []
+    
+    if (error.response) {
+      if (error.response.status === 401) {
+        alertStore.showAlert('请先登录', 'error')
+        router.push('/login')
+      } else if (error.response.data?.message) {
+        alertStore.showAlert(error.response.data.message, 'error')
+      } else {
+        alertStore.showAlert('获取文件列表失败', 'error')
+      }
+    } else {
+      alertStore.showAlert('获取文件列表失败，请检查网络连接', 'error')
+    }
   } finally {
     isLoadingFiles.value = false
   }
@@ -847,10 +873,6 @@ const createFileShare = async () => {
   if (!selectedFile.value) return
   
   try {
-    console.log("开始创建分享，文件信息:", { 
-      id: selectedFile.value.id, 
-      fileName: selectedFile.value.fileName 
-    });
     isCreatingShare.value = true
     
     // 从选择的日期计算天数
@@ -861,17 +883,13 @@ const createFileShare = async () => {
       const selectedDate = new Date(expirationDate.value);
       const diffTime = selectedDate.getTime() - today.getTime();
       expirationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    } else {
-      // 如果没有选择日期，使用默认的7天
-      expirationDays = 7;
     }
     
     // 如果expirationDays小于1, 设为1
     expirationDays = Math.max(1, Math.round(expirationDays));
-    console.log("分享参数:", { fileId: selectedFile.value.id, expirationDays });
     
     // 创建分享
-    const response = await axios.post('https://localhost:5001/api/File/share', {
+    const response = await axios.post('https://localhost:5001/api/file/share', {
       fileId: selectedFile.value.id,
       expirationDays: expirationDays
     }, {
@@ -881,29 +899,28 @@ const createFileShare = async () => {
       withCredentials: true
     });
     
-    console.log("分享API响应:", response.data);
-    
     if (response.data && response.data.success) {
-      // 分享创建成功
-      shareResult.value = response.data.share
-      console.log("分享创建成功:", shareResult.value);
+      // 兼容不同后端返回结构
+      if (response.data.share) {
+        shareResult.value = response.data.share
+      } else if (response.data.data) {
+        shareResult.value = response.data.data
+      } else {
+        shareResult.value = response.data
+      }
+      // 自动弹出分享弹窗
+      showShareDialog.value = true
+      // 可选：存储到本地
+      // localStorage.setItem('lastShareCode', shareResult.value.shareCode)
       alertStore.showAlert('创建分享成功', 'success')
-      // 刷新文件列表以更新hasActiveShare状态
       fetchUserFiles()
     } else {
       throw new Error(response.data?.message || '创建分享失败');
     }
   } catch (error: any) {
-    console.error("创建分享失败:", error);
     let errorMessage = '创建分享失败，请稍后重试';
     
     if (error.response) {
-      console.error("分享API错误详情:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      });
-      
       if (error.response.status === 401) {
         errorMessage = '登录已过期，请重新登录';
         router.push('/login');
@@ -950,31 +967,18 @@ const confirmRename = async () => {
     return;
   }
   
-  console.log("准备保存文件新名称:", { 
-    id: fileToRename.value.id, 
-    oldName: fileToRename.value.fileName, 
-    newName: newFileName.value 
-  });
-  
   try {
-    // 显示完整请求信息以便调试
     const requestData = {
       fileId: fileToRename.value.id,
       newFileName: newFileName.value
     };
-    console.log("重命名请求URL:", 'https://localhost:5001/api/File/rename');
-    console.log("重命名请求方法:", 'PUT');
-    console.log("重命名请求数据:", requestData);
     
-    // 调用重命名API - 使用PUT方法
-    const response = await axios.put('https://localhost:5001/api/File/rename', requestData, { 
+    const response = await axios.put('https://localhost:5001/api/file/rename', requestData, { 
       headers: {
         'Content-Type': 'application/json'
       },
       withCredentials: true 
-    })
-    
-    console.log("重命名API响应:", response.data);
+    });
     
     if (response.data && response.data.success) {
       // 更新文件列表中的文件名
@@ -982,79 +986,27 @@ const confirmRename = async () => {
       if (targetFile) {
         targetFile.fileName = newFileName.value;
       }
-      console.log("重命名成功:", { id: fileToRename.value.id, newName: newFileName.value });
       alertStore.showAlert('重命名成功', 'success');
       closeRenameDialog();
     } else {
       throw new Error(response.data?.message || '重命名失败')
     }
   } catch (error: any) {
-    // 完整输出错误对象以便调试
-    console.error('重命名失败，完整错误:', error);
-    
     let errorMessage = '重命名失败，请稍后重试'
     
     if (error.response) {
-      console.error("重命名API错误详情:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        headers: error.response.headers
-      });
-      
-      if (error.response?.status === 404) {
-        errorMessage = 'API端点不存在，请检查URL路径';
-      } else if (error.response?.status === 400) {
-        errorMessage = '请求参数错误: ' + (error.response.data?.message || '参数格式不正确');
-      } else if (error.response?.status === 401) {
+      if (error.response.status === 401) {
         errorMessage = '未授权，请重新登录';
         router.push('/login');
-      } else if (error.response?.status === 403) {
-        errorMessage = '无权限进行此操作';
-      } else if (error.response?.status === 405) {
-        errorMessage = '请求方法不允许，应该使用: ' + (error.response.headers['allow'] || 'POST');
-      } else if (error.response?.status === 500) {
-        errorMessage = '服务器内部错误: ' + (error.response.data?.message || '请联系管理员');
-      } else if (error.response?.data?.message) {
+      } else if (error.response.status === 404) {
+        errorMessage = '文件不存在';
+      } else if (error.response.status === 400) {
+        errorMessage = '请求参数错误: ' + (error.response.data?.message || '参数格式不正确');
+      } else if (error.response.data?.message) {
         errorMessage = error.response.data.message;
       }
-    } else if (error.request) {
-      console.error("请求已发送但没有收到响应:", error.request);
-      errorMessage = '服务器无响应，请检查网络连接';
     } else if (error.message) {
       errorMessage = error.message;
-    }
-    
-    // 尝试使用POST方法作为备选方案
-    if (error.response?.status === 405) {
-      try {
-        console.log("尝试使用POST方法重试...");
-        const retryResponse = await axios.post('https://localhost:5001/api/File/rename', {
-          fileId: fileToRename.value.id,
-          newFileName: newFileName.value
-        }, { 
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true 
-        });
-        
-        console.log("使用POST方法重试响应:", retryResponse.data);
-        
-        if (retryResponse.data && retryResponse.data.success) {
-          // 更新文件列表中的文件名
-          const targetFile = userFiles.value.find(f => f.id === fileToRename.value!.id);
-          if (targetFile) {
-            targetFile.fileName = newFileName.value;
-          }
-          console.log("使用POST方法重命名成功");
-          alertStore.showAlert('重命名成功', 'success');
-          closeRenameDialog();
-          return;
-        }
-      } catch (retryError) {
-        console.error("POST方法重试失败:", retryError);
-      }
     }
     
     alertStore.showAlert(errorMessage, 'error');
@@ -1077,42 +1029,32 @@ const confirmDeleteFile = (file: FileItem) => {
 const deleteFile = async () => {
   if (!fileToDelete.value) return
   
-  console.log("开始删除文件:", { 
-    id: fileToDelete.value.id, 
-    fileName: fileToDelete.value.fileName 
-  });
-  
   try {
-    const response = await axios.delete(`https://localhost:5001/api/File/${fileToDelete.value.id}`, {
+    const response = await axios.delete(`https://localhost:5001/api/file/${fileToDelete.value.id}`, {
       withCredentials: true
-    })
-    
-    console.log("删除API响应:", response.data);
+    });
     
     if (response.data && response.data.success) {
       // 从列表中移除文件
       userFiles.value = userFiles.value.filter(f => f.id !== fileToDelete.value!.id)
-      console.log("文件删除成功:", fileToDelete.value.fileName);
       alertStore.showAlert('文件删除成功', 'success')
     } else {
       throw new Error(response.data?.message || '删除文件失败')
     }
   } catch (error: any) {
-    console.error('删除文件失败:', error)
     let errorMessage = '删除失败，请稍后重试'
     
     if (error.response) {
-      console.error("删除API错误详情:", {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data
-      });
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message
-      } else if (error.message) {
-        errorMessage = error.message
+      if (error.response.status === 401) {
+        errorMessage = '未授权，请重新登录';
+        router.push('/login');
+      } else if (error.response.status === 404) {
+        errorMessage = '文件不存在';
+      } else if (error.response.data?.message) {
+        errorMessage = error.response.data.message;
       }
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
     alertStore.showAlert(errorMessage, 'error')
@@ -1121,6 +1063,11 @@ const deleteFile = async () => {
     fileToDelete.value = null
   }
 }
+
+// 添加isLoggedIn计算属性
+const isLoggedIn = computed(() => {
+  return localStorage.getItem('isLoggedIn') === 'true'
+})
 </script>
 
 <style scoped>

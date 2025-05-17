@@ -13,7 +13,8 @@ namespace ConcordCloud.Infrastructure.Database
 
         public DbSet<User> Users { get; set; }
         public DbSet<UserFile> Files { get; set; }
-        public DbSet<Core.Entities.FileShare> FileShares { get; set; }
+        public DbSet<ShareFile> ShareFiles  { get; set; }
+        public DbSet<Admin> Admins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,15 +32,20 @@ namespace ConcordCloud.Infrastructure.Database
                 .HasForeignKey(f => f.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // FileShare 配置
-            modelBuilder.Entity<Core.Entities.FileShare>()
+            // ShareFile 配置
+            modelBuilder.Entity<ShareFile>()
                 .HasOne(s => s.File)
                 .WithOne(f => f.Share)
-                .HasForeignKey<Core.Entities.FileShare>(s => s.FileId)
+                .HasForeignKey<ShareFile>(s => s.FileId)
                 .OnDelete(DeleteBehavior.Cascade);
                 
-            modelBuilder.Entity<Core.Entities.FileShare>()
+            modelBuilder.Entity<ShareFile>()
                 .HasIndex(s => s.ShareCode)
+                .IsUnique();
+                
+            // Admin 配置
+            modelBuilder.Entity<Admin>()
+                .HasIndex(a => a.Email)
                 .IsUnique();
         }
     }
