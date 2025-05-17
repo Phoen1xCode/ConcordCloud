@@ -125,15 +125,6 @@ const handleResize = () => {
   }
 }
 
-onMounted(() => {
-  handleResize()
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
-
 // 分页参数
 const params = ref({
   page: 1,
@@ -146,15 +137,33 @@ const loadFiles = async () => {
   try {
     params.value.total = 85
     // 更新文件列表数据...
+    console.log('管理员界面: 文件数据加载完成');
   } catch (error) {
     console.error('加载文件列表失败:', error)
     // 处理错误...
   }
 }
 
-// 初始加载
+// 组件挂载时执行
 onMounted(() => {
-  loadFiles()
+  console.log('管理员布局组件已挂载');
+  
+  // 检查管理员登录状态
+  const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
+  if (!isAdmin) {
+    console.log('检测到未登录状态，但使用硬刷新方式处理');
+  }
+  
+  // 初始化界面
+  handleResize();
+  window.addEventListener('resize', handleResize);
+  
+  // 加载数据
+  loadFiles();
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 

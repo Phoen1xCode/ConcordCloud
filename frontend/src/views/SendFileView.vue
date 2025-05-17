@@ -918,11 +918,11 @@ const createFileShare = async () => {
     if (response.success) {
       // 兼容不同后端返回结构
       if (response.share) {
-        shareResult.value = response.share
+        shareResult.value = response.share as unknown as ShareResult
       } else if (response.data) {
-        shareResult.value = response.data
+        shareResult.value = response.data as unknown as ShareResult
       } else {
-        shareResult.value = response
+        shareResult.value = response as unknown as ShareResult
       }
       // 自动弹出分享弹窗
       showShareDialog.value = true
