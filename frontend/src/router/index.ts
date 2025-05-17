@@ -44,15 +44,20 @@ const router = createRouter({
           component: () => import('@/views/manage/FileManageView.vue')
         },
         {
-          path: '/admin/settings',
-          name: 'Settings',
-          component: () => import('@/views/manage/SystemSettingsView.vue')
-        }
+          path: '/admin/users',
+          name: 'UserManage',
+          component: () => import('@/views/manage/UserManageView.vue')
+        },
       ]
     },
     
   ]
 })
 
+// 添加路由变化日志
+router.beforeEach((to, from, next) => {
+  console.log(`路由跳转: 从 ${from.path} 到 ${to.path}`);
+  next();
+})
 
 export default router

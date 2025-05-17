@@ -65,7 +65,7 @@ router.beforeEach((to, from, next) => {
 router.afterEach(() => {
   setTimeout(() => {
     isLoading.value = false
-  }, 200) // 添加一个小延迟，以确保组件已加载
+  }, 500) // 增加延迟以确保组件已加载
 })
 
 provide('isDarkMode', isDarkMode)
@@ -79,11 +79,9 @@ provide('isLoading', isLoading)
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
     </div>
-    <RouterView v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" :key="$route.fullPath" />
-      </transition>
-    </RouterView>
+    
+    <!-- 简化的RouterView使用方式，避免transition嵌套问题 -->
+    <RouterView />
 
     <AlertComponent />
   </div>
