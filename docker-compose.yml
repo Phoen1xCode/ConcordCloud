@@ -1,0 +1,38 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: concordcloud-frontend
+    restart: always
+    ports:
+      - "8080:80"
+      - "443:443"
+    depends_on:
+      - backend
+    networks:
+      - concordcloud-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: concordcloud-backend
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Data Source=concordcloud.db
+      - Cors__AllowedOrigins=http://localhost:8080,http://localhost:5173
+    volumes:
+      - backend-data:/app/FileStorage
+      - ./backend/API/concordcloud.db:/app/concordcloud.db
+    networks:
+      - concordcloud-network
+
+networks:
+  concordcloud-network:
+    driver: bridge
+
+volumes:
+  backend-data:
