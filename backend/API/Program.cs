@@ -92,7 +92,7 @@ builder.Services.AddCors(options =>
         var adminDomain = builder.Configuration.GetSection("Admin:Domain").Get<string>();
         if (string.IsNullOrEmpty(adminDomain))
         {
-            adminDomain = "admin.concordcloud.com"; // 默认值
+            adminDomain = "http://localhost:5173";
         }
         policyBuilder.WithOrigins(adminDomain)
             .AllowAnyMethod()
@@ -106,23 +106,20 @@ builder.Services.AddCors(options =>
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.ListenAnyIP(5000); // HTTP端口
-    serverOptions.ListenAnyIP(5001, listenOptions =>
-    {
-        listenOptions.UseHttps(); // HTTPS端口
-    });
+    // serverOptions.ListenAnyIP(5001, listenOptions =>
+    // {
+    //     listenOptions.UseHttps(); // HTTPS端口
+    // });
 });
 
 var app = builder.Build();
 
-// 不再需要验证JWT配置
 // 验证 CORS 配置 (生产环境)
 if (!app.Environment.IsDevelopment())
 {
     var allowedOrigins = app.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
     if (allowedOrigins == null || allowedOrigins.Length == 0 || allowedOrigins.Contains("*"))
     {
-         // 在生产环境中，如果未配置具体的允许来源 (且不是'*')，则抛出异常或记录严重警告
-         // 这里选择抛出异常强制要求配置
          throw new InvalidOperationException("CORS AllowedOrigins are not configured correctly for production environment. Must specify allowed origins in appsettings or environment variables (Cors:AllowedOrigins). Do not use '*' in production.");
     }
     
@@ -164,10 +161,8 @@ using (var scope = app.Services.CreateScope())
             app.Logger.LogInformation("Default admin account created successfully {Email} {Password}", adminEmail, adminPassword);
         }
     }
-    // 修复现有管理员账号的密码哈希方法 (从HMACSHA512修改为BCrypt)
     else
     {
-        // 查找所有管理员账号
         var admins = dbContext.Admins.ToList();
         var passwordFixed = false;
         
@@ -175,8 +170,6 @@ using (var scope = app.Services.CreateScope())
         {
             try
             {
-                // 尝试将密码哈希转换为BCrypt格式
-                // 这里我们假设所有管理员密码都为默认密码 Admin@123456
                 admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
                 passwordFixed = true;
             }
@@ -204,10 +197,10 @@ if (app.Environment.IsDevelopment() || true) // 确保Swagger始终可用
     });
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // 应用全局 CORS 策略
-app.UseCors("AllowAll");
+app.UseCors("AllowWithCredentials");
 
 // 管理员路由的域名限制中间件
 app.Use(async (context, next) =>
@@ -219,12 +212,10 @@ app.Use(async (context, next) =>
         
         if (app.Environment.IsDevelopment() || host.Equals(adminDomain, StringComparison.OrdinalIgnoreCase))
         {
-            // 开发环境或来自管理员域名的请求，允许继续
             await next();
         }
         else
         {
-            // 非管理员域名的请求，返回 404 不存在
             context.Response.StatusCode = 404;
             return;
         }
