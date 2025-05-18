@@ -563,9 +563,17 @@ const toggleDrawer = () => {
 const fetchUserFiles = async () => {
   try {
     isLoadingFiles.value = true
-    const response = await axios.get('https://localhost:5001/api/file', {
-      withCredentials: true
-    })
+    const response = await axios.get('https://localhost:5001/api/file', { 
+      withCredentials: true 
+    });
+    
+    // 修改前
+    await axios.get('https://localhost:5001/api/file', { 
+      withCredentials: true 
+    });
+    
+    // 修改后
+    await api.get('/api/file');
     console.log('获取文件列表响应:', response.data)
     if (response.data && response.data.success) {
       if (Array.isArray(response.data.data)) {
