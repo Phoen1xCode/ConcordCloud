@@ -27,3 +27,11 @@
 - 平台设置不同用户角色，主要为普通用户和管理员。
 - 管理员拥有最高权限，可管理平台上所有文件，包括查看、编辑、删除任何用户上传的文件。
 - 普通用户仅能管理自己上传的文件，如查看、重命名、删除自己的文件，无法对其他用户文件进行操作。
+
+
+## 部署教程
+```
+https://github.com/Phoen1xCode/ConcordCloud.git
+cd ConcordCloud
+docker-compose up -d --build
+```
