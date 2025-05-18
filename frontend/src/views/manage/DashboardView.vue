@@ -161,10 +161,10 @@
     <!-- 添加版本和版权信息 -->
     <div class="mt-auto text-center py-4" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
       <p class="text-sm">
-        ConcordCloud v3.0.0
+        ConcordCloud v1.0.0
       </p>
       <p class="text-sm mt-1">
-        © {{ new Date().getFullYear() }} ConcordCloud
+        © {{ new Date().getFullYear() }} ConcordCloud. 保留所有权利。
       </p>
     </div>
   </div>

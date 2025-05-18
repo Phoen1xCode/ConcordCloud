@@ -100,7 +100,8 @@ const alertStore = useAlertStore()
 const menuItems: MenuItem[] = [
   { id: 'Dashboard', name: '仪表盘', icon: LayoutDashboardIcon, redirect: '/admin/dashboard' },
   { id: 'FileManage', name: '文件管理', icon: FolderIcon, redirect: '/admin/files' },
-  { id: 'UserManage', name: '用户管理', icon: UsersIcon, redirect: '/admin/users' }
+  { id: 'UserManage', name: '用户管理', icon: UsersIcon, redirect: '/admin/users' },
+  { id: 'Settings', name: '系统设置', icon: CogIcon, redirect: '/admin/settings' }
 ]
 
 const isSidebarOpen = ref(true)
