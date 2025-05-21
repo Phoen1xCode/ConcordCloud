@@ -116,5 +116,34 @@ namespace ConcordCloud.Core.Services
                 CreatedAt = user.CreatedAt
             };
         }
+
+        public async Task<(bool Success, string Message)> ChangePasswordAsync(Guid userId, UserUpdatePasswordDto passwordDto)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return (false, "用户不存在");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(passwordDto.CurrentPassword, user.PasswordHash))
+            {
+                return (false, "当前密码错误");
+            }
+
+            if (passwordDto.NewPassword != passwordDto.ConfirmPassword)
+            {
+                return (false, "新密码与确认密码不匹配");
+            }
+
+            if (passwordDto.NewPassword.Length < 6)
+            {
+                return (false, "新密码长度至少为6位");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordDto.NewPassword);
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "密码修改成功");
+        }
     }
 } 

@@ -25,3 +25,10 @@ public class UserDto
     public required string Role { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public class UserUpdatePasswordDto
+{
+    public required string CurrentPassword { get; set; }
+    public required string NewPassword { get; set; }
+    public required string ConfirmPassword { get; set; }
+}
