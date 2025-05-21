@@ -24,19 +24,26 @@ namespace ConcordCloud.Core.Services
             // check if the email has been used
             if (await _dbContext.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                return (false, "The email has been used.", null);
+                return (false, "该邮箱已被使用。", null);
+            }
+
+            // check if the username has been used
+            if (await _dbContext.Users.AnyAsync(u => u.Username == registerDto.Username))
+            {
+                return (false, "该用户名已被使用。", null);
             }
 
             // check if the password is consistent
             if (registerDto.Password != registerDto.ConfirmPassword)
             {
-                return (false, "The password is not consistent.", null);
+                return (false, "密码不一致。", null);
             }
 
             // create user entity 
             var user = new User
             {
                 Id = Guid.NewGuid(),
+                Username = registerDto.Username,
                 Email = registerDto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
                 CreatedAt = DateTime.UtcNow,
@@ -48,9 +55,10 @@ namespace ConcordCloud.Core.Services
             await _dbContext.SaveChangesAsync();
 
             // return the result
-            return (true, "Register successfully", new UserDto
+            return (true, "注册成功", new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
@@ -60,18 +68,19 @@ namespace ConcordCloud.Core.Services
         // login user   
         public async Task<(bool Success, string Message, UserDto? User)> LoginAsync(UserLoginDto loginDto)
         {
-            // find user
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            // find user by email or username
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => 
+                u.Email == loginDto.Email || u.Username == loginDto.Email);
             
             if (user == null)
             {
-                return (false, "User does not exist.", null);
+                return (false, "用户不存在。", null);
             }
 
             // check if the password is correct
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             {
-                return (false, "The password is incorrect.", null);
+                return (false, "密码错误。", null);
             }
 
             // update the last login time
@@ -79,9 +88,10 @@ namespace ConcordCloud.Core.Services
             await _dbContext.SaveChangesAsync();
 
             // return the result
-            return (true, "Login successfully", new UserDto
+            return (true, "登录成功", new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
@@ -100,6 +110,7 @@ namespace ConcordCloud.Core.Services
             return new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
