@@ -121,4 +121,27 @@ public class UserController : ControllerBase
 
         return ApiResponse<object>.Ok(message).ToActionResult();
     }
+
+    [HttpPost("update-username")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUsername([FromBody] UserUpdateUsernameDto usernameDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ApiResponse<object>.BadRequest("Invalid request data").ToActionResult();
+        }
+
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+        {
+            return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
+        }
+
+        var (success, message) = await _userService.UpdateUsernameAsync(userId, usernameDto);
+        if (!success)
+        {
+            return ApiResponse<object>.BadRequest(message).ToActionResult();
+        }
+
+        return ApiResponse<object>.Ok(message).ToActionResult();
+    }
 }

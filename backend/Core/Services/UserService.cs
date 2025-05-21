@@ -145,5 +145,37 @@ namespace ConcordCloud.Core.Services
 
             return (true, "密码修改成功");
         }
+
+        public async Task<(bool Success, string Message)> UpdateUsernameAsync(Guid userId, UserUpdateUsernameDto usernameDto)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return (false, "用户不存在");
+            }
+
+            // 检查新用户名是否已被使用
+            if (await _dbContext.Users.AnyAsync(u => u.Username == usernameDto.NewUsername && u.Id != userId))
+            {
+                return (false, "该用户名已被使用");
+            }
+
+            // 检查用户名长度
+            if (string.IsNullOrWhiteSpace(usernameDto.NewUsername) || usernameDto.NewUsername.Length < 3)
+            {
+                return (false, "用户名长度至少为3个字符");
+            }
+
+            // 检查用户名是否包含非法字符
+            if (usernameDto.NewUsername.Any(c => !char.IsLetterOrDigit(c) && c != '_' && c != '-'))
+            {
+                return (false, "用户名只能包含字母、数字、下划线和连字符");
+            }
+
+            user.Username = usernameDto.NewUsername;
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "用户名修改成功");
+        }
     }
 } 

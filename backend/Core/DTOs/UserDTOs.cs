@@ -32,3 +32,8 @@ public class UserUpdatePasswordDto
     public required string NewPassword { get; set; }
     public required string ConfirmPassword { get; set; }
 }
+
+public class UserUpdateUsernameDto
+{
+    public required string NewUsername { get; set; }
+}
