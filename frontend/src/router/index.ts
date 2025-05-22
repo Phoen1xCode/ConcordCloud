@@ -18,6 +18,11 @@ const router = createRouter({
       component: () => import('@/views/manage/RegisterView.vue')
     },
     {
+      path: '/admin-login',
+      name: 'AdminLogin',
+      component: () => import('@/views/manage/AdminLoginView.vue')
+    },
+    {
       path: '/retrieve',
       name: 'Retrieve',
       component: () => import('@/views/RetrievewFileView.vue')
@@ -32,21 +37,25 @@ const router = createRouter({
       name: 'Manage',
       component: () => import('@/layout/AdminLayout/AdminLayout.vue'),
       redirect: '/admin/dashboard',
+      meta: { requiresAdminAuth: true },
       children: [
         {
           path: '/admin/dashboard',
           name: 'Dashboard',
-          component: () => import('@/views/manage/DashboardView.vue')
+          component: () => import('@/views/manage/DashboardView.vue'),
+          meta: { requiresAdminAuth: true }
         },
         {
           path: '/admin/files',
           name: 'FileManage',
-          component: () => import('@/views/manage/FileManageView.vue')
+          component: () => import('@/views/manage/FileManageView.vue'),
+          meta: { requiresAdminAuth: true }
         },
         {
           path: '/admin/users',
           name: 'UserManage',
-          component: () => import('@/views/manage/UserManageView.vue')
+          component: () => import('@/views/manage/UserManageView.vue'),
+          meta: { requiresAdminAuth: true }
         },
       ]
     },
@@ -54,10 +63,23 @@ const router = createRouter({
   ]
 })
 
-// 添加路由变化日志
+// 路由守卫 - 检查用户和管理员权限
 router.beforeEach((to, from, next) => {
   console.log(`路由跳转: 从 ${from.path} 到 ${to.path}`);
+  
+  // 检查管理员权限路由
+  if (to.matched.some(record => record.meta.requiresAdminAuth)) {
+    const isAdminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+    
+    if (!isAdminLoggedIn) {
+      console.log('访问管理员页面需要管理员权限，重定向到管理员登录');
+      next({ path: '/admin-login' });
+      return;
+    }
+  }
+  
+  // 允许导航继续
   next();
-})
+});
 
 export default router

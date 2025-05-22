@@ -1,6 +1,15 @@
 <template>
   <div class="min-h-screen flex items-center justify-center p-4 overflow-hidden transition-colors duration-300"
     @paste.prevent="handlePaste">
+    <!-- Add user profile button -->
+    <button @click="openUserProfile" 
+      class="fixed bottom-4 left-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+      :class="[isDarkMode ? 'bg-gray-800 text-indigo-400 hover:bg-gray-700' : 'bg-white text-indigo-600 hover:bg-gray-100']"
+      v-if="isLoggedIn">
+      <span>个人资料</span>
+      <UserIcon class="w-5 h-5" />
+    </button>
+    
     <div class="rounded-3xl shadow-2xl overflow-hidden border w-full max-w-md transition-colors duration-300" :class="[
       isDarkMode
         ? 'bg-white bg-opacity-10 backdrop-filter backdrop-blur-xl border-gray-700'
@@ -45,7 +54,7 @@
                 </span>
               </p>
               <p :class="['mt-2 text-xs', isDarkMode ? 'text-gray-500' : 'text-gray-400']">
-                支持各种常见格式，最大{{ getStorageUnit(config.uploadSize) }}
+                支持各种常见格式，最大100MB
               </p>
             </div>
           </div>
@@ -81,8 +90,8 @@
         </button>
       </div>
     </div>
-
-    <!-- 抽屉式文件管理 -->
+    
+  
     <transition name="drawer">
       <div v-if="showDrawer"
         class="fixed inset-y-0 right-0 w-full sm:w-120 bg-opacity-70 backdrop-filter backdrop-blur-xl shadow-2xl z-50 overflow-hidden flex flex-col"
@@ -390,6 +399,128 @@
       </div>
     </transition>
 
+    <!-- User Profile Modal -->
+    <transition name="fade">
+      <div v-if="showUserProfileModal" class="fixed inset-0 flex items-center justify-center z-50">
+        <!-- Background overlay -->
+        <div class="absolute inset-0 bg-black/60 backdrop-filter backdrop-blur-sm" @click="closeUserProfileModal"></div>
+        
+        <!-- Modal content -->
+        <div class="relative p-6 rounded-lg shadow-xl w-full max-w-md"
+          :class="[isDarkMode ? 'bg-gray-800' : 'bg-white']">
+          <button @click="closeUserProfileModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <XIcon class="w-5 h-5" />
+          </button>
+          
+          <h3 class="text-xl font-bold mb-4" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">个人资料</h3>
+          
+          <div v-if="userProfile">
+            <div class="mb-4">
+              <p class="text-sm font-medium" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">用户名</p>
+              <p class="mt-1" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">{{ userProfile.username }}</p>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-sm font-medium" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">邮箱</p>
+              <p class="mt-1" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">{{ userProfile.email }}</p>
+            </div>
+            
+            <div class="border-t mt-6" :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+              <h4 class="text-lg font-medium mt-4 mb-3" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">修改用户名</h4>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  新用户名
+                </label>
+                <input type="text" v-model="usernameForm.newUsername" autocomplete="text"
+                  class="w-full px-3 py-2 border rounded-md"
+                  :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+              </div>
+              
+              <button @click="updateUsername" class="w-full px-4 py-2 rounded-md font-medium transition-colors duration-300 mb-6"
+                :class="[isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white']"
+                :disabled="isUpdatingUsername">
+                <span v-if="isUpdatingUsername">处理中...</span>
+                <span v-else>更新用户名</span>
+              </button>
+            </div>
+            
+            <div class="border-t" :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+              <h4 class="text-lg font-medium mt-4 mb-3" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">修改密码</h4>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  当前密码
+                </label>
+                <div class="relative">
+                  <input :type="showCurrentPassword ? 'text' : 'password'" v-model="passwordForm.currentPassword"
+                    class="w-full px-3 py-2 border rounded-md" autocomplete="new-password"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showCurrentPassword = !showCurrentPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showCurrentPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  新密码
+                </label>
+                <div class="relative">
+                  <input :type="showNewPassword ? 'text' : 'password'" v-model="passwordForm.newPassword"
+                    class="w-full px-3 py-2 border rounded-md"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showNewPassword = !showNewPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showNewPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  确认新密码
+                </label>
+                <div class="relative">
+                  <input :type="showConfirmPassword ? 'text' : 'password'" v-model="passwordForm.confirmPassword"
+                    class="w-full px-3 py-2 border rounded-md"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showConfirmPassword = !showConfirmPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showConfirmPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <button @click="changePassword" class="w-full px-4 py-2 rounded-md font-medium transition-colors duration-300"
+                :class="[isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white']"
+                :disabled="isUpdatingPassword">
+                <span v-if="isUpdatingPassword">处理中...</span>
+                <span v-else>更新密码</span>
+              </button>
+            </div>
+          </div>
+          
+          <div v-else class="flex justify-center items-center h-40">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2" :class="[isDarkMode ? 'border-blue-400' : 'border-blue-600']"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- 右下角退出登录按钮 -->
     <button @click="logout" 
       class="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
@@ -415,7 +546,10 @@ import {
   LogOutIcon,
   Share2Icon,
   PencilIcon,
-  SearchIcon
+  SearchIcon,
+  UserIcon,
+  EyeIcon,
+  EyeOffIcon
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
@@ -1130,6 +1264,163 @@ const deleteFile = async () => {
 const isLoggedIn = computed(() => {
   return localStorage.getItem('isLoggedIn') === 'true'
 })
+
+// User profile related states
+const showUserProfileModal = ref(false)
+const userProfile = ref<any>(null)
+const isUpdatingUsername = ref(false)
+const isUpdatingPassword = ref(false)
+
+// Password visibility states
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+// Form data
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const usernameForm = ref({
+  newUsername: ''
+})
+
+// Open user profile modal
+const openUserProfile = async () => {
+  showUserProfileModal.value = true
+  
+  // Reset password form fields when opening the modal
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  
+  await getUserProfile()
+}
+
+// Close user profile modal
+const closeUserProfileModal = () => {
+  showUserProfileModal.value = false
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  usernameForm.value = {
+    newUsername: ''
+  }
+}
+
+// Get user profile information
+const getUserProfile = async () => {
+  try {
+    const response = await api.get('/api/user/profile')
+    if (response.success) {
+      userProfile.value = response.data
+      
+      // Reset username form to empty when opening profile
+      usernameForm.value.newUsername = ''
+    } else {
+      alertStore.showAlert('获取用户资料失败', 'error')
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    alertStore.showAlert('获取用户资料失败', 'error')
+  }
+}
+
+// Update username
+const updateUsername = async () => {
+  if (!usernameForm.value.newUsername) {
+    alertStore.showAlert('请输入新用户名', 'error')
+    return
+  }
+
+  if (usernameForm.value.newUsername === userProfile.value.username) {
+    alertStore.showAlert('新用户名不能与当前用户名相同', 'warning')
+    return
+  }
+
+  isUpdatingUsername.value = true
+
+  try {
+    const response = await api.post('/api/user/update-username', {
+      newUsername: usernameForm.value.newUsername
+    })
+
+    if (response.success) {
+      alertStore.showAlert('用户名更新成功', 'success')
+      // Update the profile data
+      userProfile.value.username = usernameForm.value.newUsername
+    } else {
+      alertStore.showAlert(response.message || '用户名更新失败', 'error')
+    }
+  } catch (error: any) {
+    console.error('Error updating username:', error)
+    
+    let errorMessage = '用户名更新失败，请稍后再试'
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    }
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    isUpdatingUsername.value = false
+  }
+}
+
+// Change password
+const changePassword = async () => {
+  // Validate password
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    alertStore.showAlert('请填写所有密码字段', 'error')
+    return
+  }
+  
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    alertStore.showAlert('两次输入的新密码不一致', 'error')
+    return
+  }
+  
+  if (passwordForm.value.newPassword.length < 6) {
+    alertStore.showAlert('新密码长度至少为6位', 'error')
+    return
+  }
+
+  isUpdatingPassword.value = true
+  
+  try {
+    const response = await api.post('/api/user/change-password', {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+      confirmPassword: passwordForm.value.confirmPassword
+    })
+    
+    if (response.success) {
+      alertStore.showAlert('密码修改成功', 'success')
+      // Reset the form
+      passwordForm.value = {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
+    } else {
+      alertStore.showAlert(response.message || '密码修改失败', 'error')
+    }
+  } catch (error: any) {
+    console.error('Error changing password:', error)
+    
+    let errorMessage = '密码修改失败，请稍后再试'
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    }
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    isUpdatingPassword.value = false
+  }
+}
 </script>
 
 <style scoped>

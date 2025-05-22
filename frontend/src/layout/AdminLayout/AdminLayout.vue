@@ -173,6 +173,7 @@ const handleLogout = async () => {
     
     // 清除登录状态
     localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('adminToken');
     localStorage.removeItem('token');
     
     // 提示信息
@@ -186,6 +187,7 @@ const handleLogout = async () => {
     
     // 即使API失败，也强制退出
     localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('adminToken');
     localStorage.removeItem('token');
     router.push('/login');
   }
