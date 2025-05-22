@@ -24,19 +24,26 @@ namespace ConcordCloud.Core.Services
             // check if the email has been used
             if (await _dbContext.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                return (false, "The email has been used.", null);
+                return (false, "该邮箱已被使用。", null);
+            }
+
+            // check if the username has been used
+            if (await _dbContext.Users.AnyAsync(u => u.Username == registerDto.Username))
+            {
+                return (false, "该用户名已被使用。", null);
             }
 
             // check if the password is consistent
             if (registerDto.Password != registerDto.ConfirmPassword)
             {
-                return (false, "The password is not consistent.", null);
+                return (false, "密码不一致。", null);
             }
 
             // create user entity 
             var user = new User
             {
                 Id = Guid.NewGuid(),
+                Username = registerDto.Username,
                 Email = registerDto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
                 CreatedAt = DateTime.UtcNow,
@@ -48,9 +55,10 @@ namespace ConcordCloud.Core.Services
             await _dbContext.SaveChangesAsync();
 
             // return the result
-            return (true, "Register successfully", new UserDto
+            return (true, "注册成功", new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
@@ -60,18 +68,19 @@ namespace ConcordCloud.Core.Services
         // login user   
         public async Task<(bool Success, string Message, UserDto? User)> LoginAsync(UserLoginDto loginDto)
         {
-            // find user
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+            // find user by email or username
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => 
+                u.Email == loginDto.Email || u.Username == loginDto.Email);
             
             if (user == null)
             {
-                return (false, "User does not exist.", null);
+                return (false, "用户不存在。", null);
             }
 
             // check if the password is correct
             if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             {
-                return (false, "The password is incorrect.", null);
+                return (false, "密码错误。", null);
             }
 
             // update the last login time
@@ -79,9 +88,10 @@ namespace ConcordCloud.Core.Services
             await _dbContext.SaveChangesAsync();
 
             // return the result
-            return (true, "Login successfully", new UserDto
+            return (true, "登录成功", new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
@@ -100,10 +110,72 @@ namespace ConcordCloud.Core.Services
             return new UserDto
             {
                 Id = user.Id,
+                Username = user.Username,
                 Email = user.Email,
                 Role = user.Role.ToString(),
                 CreatedAt = user.CreatedAt
             };
+        }
+
+        public async Task<(bool Success, string Message)> ChangePasswordAsync(Guid userId, UserUpdatePasswordDto passwordDto)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return (false, "用户不存在");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(passwordDto.CurrentPassword, user.PasswordHash))
+            {
+                return (false, "当前密码错误");
+            }
+
+            if (passwordDto.NewPassword != passwordDto.ConfirmPassword)
+            {
+                return (false, "新密码与确认密码不匹配");
+            }
+
+            if (passwordDto.NewPassword.Length < 6)
+            {
+                return (false, "新密码长度至少为6位");
+            }
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(passwordDto.NewPassword);
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "密码修改成功");
+        }
+
+        public async Task<(bool Success, string Message)> UpdateUsernameAsync(Guid userId, UserUpdateUsernameDto usernameDto)
+        {
+            var user = await _dbContext.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return (false, "用户不存在");
+            }
+
+            // 检查新用户名是否已被使用
+            if (await _dbContext.Users.AnyAsync(u => u.Username == usernameDto.NewUsername && u.Id != userId))
+            {
+                return (false, "该用户名已被使用");
+            }
+
+            // 检查用户名长度
+            if (string.IsNullOrWhiteSpace(usernameDto.NewUsername) || usernameDto.NewUsername.Length < 3)
+            {
+                return (false, "用户名长度至少为3个字符");
+            }
+
+            // 检查用户名是否包含非法字符
+            if (usernameDto.NewUsername.Any(c => !char.IsLetterOrDigit(c) && c != '_' && c != '-'))
+            {
+                return (false, "用户名只能包含字母、数字、下划线和连字符");
+            }
+
+            user.Username = usernameDto.NewUsername;
+            await _dbContext.SaveChangesAsync();
+
+            return (true, "用户名修改成功");
         }
     }
 } 
