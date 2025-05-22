@@ -25,6 +25,10 @@ namespace ConcordCloud.Infrastructure.Database
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
             // UserFile 配置
             modelBuilder.Entity<UserFile>()
                 .HasOne(f => f.Owner)
