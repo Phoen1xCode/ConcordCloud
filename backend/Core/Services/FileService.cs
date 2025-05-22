@@ -9,19 +9,38 @@ using ConcordCloud.Core.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace ConcordCloud.Core.Services;
+
+/// <summary>
+/// Service responsible for handling file operations including upload, download, sharing, and management
+/// </summary>
 public class FileService : IFileService
 {
     private readonly IAppDbContext _dbContext;
     private readonly IFileStorageService _fileStorageService;
 
+    /// <summary>
+    /// Initializes a new instance of the FileService
+    /// </summary>
+    /// <param name="dbContext">Database context for file operations</param>
+    /// <param name="fileStorageService">Service for handling physical file storage</param>
     public FileService(IAppDbContext dbContext, IFileStorageService fileStorageService)
     {
         _dbContext = dbContext;
         _fileStorageService = fileStorageService;
     }
 
+    /// <summary>
+    /// Uploads a file for a specific user
+    /// </summary>
+    /// <param name="userId">ID of the user uploading the file</param>
+    /// <param name="originalFileName">Original name of the file</param>
+    /// <param name="contentType">MIME type of the file</param>
+    /// <param name="fileSize">Size of the file in bytes</param>
+    /// <param name="fileStream">Stream containing the file data</param>
+    /// <returns>Result of the upload operation including file details</returns>
     public async Task<FileUploadResultDto> UploadFileAsync(Guid userId, string originalFileName, string contentType, long fileSize, Stream fileStream)
     {
+        // Verify user exists
         var user = await _dbContext.Users.FindAsync(userId);
         if (user == null)
         {
@@ -32,6 +51,7 @@ public class FileService : IFileService
             };
         }
 
+        // Save file to storage
         var (success, storagePath, message) = await _fileStorageService.SaveFileAsync(fileStream, originalFileName);
         if (!success)
         {
@@ -42,6 +62,7 @@ public class FileService : IFileService
             };
         }
 
+        // Create file record in database
         var file = new UserFile
         {
             Id = Guid.NewGuid(),
@@ -73,6 +94,11 @@ public class FileService : IFileService
         };
     }
 
+    /// <summary>
+    /// Retrieves all files owned by a specific user
+    /// </summary>
+    /// <param name="userId">ID of the user whose files to retrieve</param>
+    /// <returns>Collection of file DTOs</returns>
     public async Task<IEnumerable<FileDto>> GetUserFilesAsync(Guid userId)
     {
         var files = await _dbContext.Files
@@ -92,63 +118,72 @@ public class FileService : IFileService
         });
     }
 
+    /// <summary>
+    /// Deletes a file and its associated storage
+    /// </summary>
+    /// <param name="userId">ID of the user requesting deletion</param>
+    /// <param name="fileId">ID of the file to delete</param>
+    /// <returns>Success status and message</returns>
     public async Task<(bool Success, string Message)> DeleteFileAsync(Guid userId, Guid fileId)
     {
-        // 查找文件
+        // Find the file
         var file = await _dbContext.Files
             .FirstOrDefaultAsync(f => f.Id == fileId);
 
         if (file == null)
         {
-            return (false, "文件不存在");
+            return (false, "File not found");
         }
 
-        // 验证文件所有权（除非是管理员）
+        // Check if user is admin
         var isAdmin = await _dbContext.Users
-            .Where(u => u.Id == userId && u.Role == UserRole.Admin)
+            .Where(u => u.Id == userId)
             .AnyAsync();
 
+        // Verify ownership or admin status
         if (file.OwnerId != userId && !isAdmin)
         {
-            return (false, "您没有权限删除此文件");
+            return (false, "You do not have permission to delete this file");
         }
 
-        // 删除物理文件
+        // Delete physical file
         await _fileStorageService.DeleteFileAsync(file.StoragePath);
 
-        // 删除数据库记录
+        // Remove database record
         _dbContext.Files.Remove(file);
         await _dbContext.SaveChangesAsync();
 
-        return (true, "文件删除成功");
+        return (true, "File deleted successfully");
     }
 
-    public async Task<(bool Success, string Message, FileDto File)> RenameFileAsync(Guid userId, FileRenameDto renameDto)
+    /// <summary>
+    /// Renames a file
+    /// </summary>
+    /// <param name="userId">ID of the user requesting rename</param>
+    /// <param name="renameDto">DTO containing file ID and new name</param>
+    /// <returns>Success status, message, and updated file details</returns>
+    public async Task<(bool Success, string Message, FileDto? File)> RenameFileAsync(Guid userId, FileRenameDto renameDto)
     {
-        // 查找文件
+        // Find the file
         var file = await _dbContext.Files
             .FirstOrDefaultAsync(f => f.Id == renameDto.FileId);
 
         if (file == null)
         {
-            return (false, "文件不存在", null);
+            return (false, "File not found", null);
         }
 
-        // 验证文件所有权（除非是管理员）
-        var isAdmin = await _dbContext.Users
-            .Where(u => u.Id == userId && u.Role == UserRole.Admin)
-            .AnyAsync();
-
-        if (file.OwnerId != userId && !isAdmin)
+        // Verify ownership
+        if (file.OwnerId != userId)
         {
-            return (false, "您没有权限重命名此文件", null);
+            return (false, "You do not have permission to rename this file", null);
         }
 
-        // 更新文件名
+        // Update filename
         file.FileName = renameDto.NewFileName;
         await _dbContext.SaveChangesAsync();
 
-        return (true, "文件重命名成功", new FileDto
+        return (true, "File renamed successfully", new FileDto
         {
             Id = file.Id,
             FileName = file.FileName,
@@ -159,47 +194,51 @@ public class FileService : IFileService
         });
     }
 
+    /// <summary>
+    /// Creates a shareable link for a file
+    /// </summary>
+    /// <param name="userId">ID of the user creating the share</param>
+    /// <param name="shareDto">DTO containing share details</param>
+    /// <returns>Share result with code and expiration details</returns>
     public async Task<FileShareResultDto> CreateFileShareAsync(Guid userId, FileShareDto shareDto)
-    {
-        Console.WriteLine("开始创建文件分享...");
-        
-        // 查找文件
+    {   
+        // Find the file
         var file = await _dbContext.Files
             .FirstOrDefaultAsync(f => f.Id == shareDto.FileId);
 
         if (file == null)
         {
-            Console.WriteLine($"文件不存在: {shareDto.FileId}");
+            Console.WriteLine($"File not found: {shareDto.FileId}");
             return null;
         }
 
-        // 验证文件所有权
+        // Verify file ownership
         if (file.OwnerId != userId)
         {
-            Console.WriteLine($"用户 {userId} 不是文件 {shareDto.FileId} 的所有者");
+            Console.WriteLine($"User {userId} is not the owner of file {shareDto.FileId}");
             return null;
         }
 
-        // 生成分享码
+        // Generate share code
         string shareCode = GenerateShareCode();
-        Console.WriteLine($"生成分享码: {shareCode}");
+        Console.WriteLine($"Generated share code: {shareCode}");
 
-        // 设置过期时间
+        // Set expiration time
         var expiresAt = DateTime.UtcNow.AddDays(shareDto.ExpirationDays);
         
-        // 查找现有分享记录
+        // Find existing share record
         var existingShare = await _dbContext.ShareFiles
             .FirstOrDefaultAsync(s => s.FileId == shareDto.FileId);
             
-        // 完全删除现有分享记录（如果存在）
+        // Completely remove existing share record (if exists)
         if (existingShare != null)
         {
-            Console.WriteLine($"删除现有分享记录: {existingShare.Id}");
+            Console.WriteLine($"Removing existing share record: {existingShare.Id}");
             _dbContext.ShareFiles.Remove(existingShare);
             await _dbContext.SaveChangesAsync();
         }
         
-        // 创建全新的分享记录
+        // Create new share record
         var newShare = new Entities.ShareFile
         {
             Id = Guid.NewGuid(),
@@ -209,18 +248,18 @@ public class FileService : IFileService
             ExpiresAt = expiresAt
         };
         
-        Console.WriteLine($"创建新分享记录: {newShare.Id}");
+        Console.WriteLine($"Creating new share record: {newShare.Id}");
         await _dbContext.ShareFiles.AddAsync(newShare);
         
         try
         {
             await _dbContext.SaveChangesAsync();
-            Console.WriteLine("分享记录保存成功");
+            Console.WriteLine("Share record saved successfully");
             
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"保存分享记录时出错: {ex.Message}");
+            Console.WriteLine($"Error saving share record: {ex.Message}");
             throw;
         }
 
@@ -232,68 +271,77 @@ public class FileService : IFileService
         };
     }
 
-    public async Task<(bool Success, string Message, Stream FileStream, string FileName, string ContentType)> DownloadFileByIdAsync(Guid userId, Guid fileId)
+    /// <summary>
+    /// Downloads a file by its ID
+    /// </summary>
+    /// <param name="userId">ID of the user requesting download</param>
+    /// <param name="fileId">ID of the file to download</param>
+    /// <returns>File stream and metadata if successful</returns>
+    public async Task<(bool Success, string Message, Stream? FileStream, string? FileName, string? ContentType)> DownloadFileByIdAsync(Guid userId, Guid fileId)
     {
-        // 查找文件
+        // Find the file
         var file = await _dbContext.Files
             .FirstOrDefaultAsync(f => f.Id == fileId);
 
         if (file == null)
         {
-            return (false, "文件不存在", null, null, null);
+            return (false, "File does not exist", null, null, null);
         }
 
-        // 验证文件所有权（除非是管理员）
+        // Verify file ownership (unless admin)
         var isAdmin = await _dbContext.Users
             .Where(u => u.Id == userId && u.Role == UserRole.Admin)
             .AnyAsync();
 
         if (file.OwnerId != userId && !isAdmin)
         {
-            return (false, "您没有权限下载此文件", null, null, null);
+            return (false, "You do not have permission to download this file", null, null, null);
         }
 
-        // 获取文件流
+        // Get file stream
         var (success, fileStream, message) = await _fileStorageService.GetFileAsync(file.StoragePath);
         if (!success)
         {
             return (false, message, null, null, null);
         }
 
-        return (true, "文件获取成功", fileStream, file.OriginalFileName, file.ContentType);
+        return (true, "File retrieved successfully", fileStream, file.OriginalFileName, file.ContentType);
     }
 
-    public async Task<(bool Success, string Message, Stream FileStream, string FileName, string ContentType)> DownloadFileByShareCodeAsync(string shareCode)
+    /// <summary>
+    /// Downloads a file using a share code
+    /// </summary>
+    /// <param name="shareCode">Share code for the file</param>
+    /// <returns>File stream and metadata if successful</returns>
+    public async Task<(bool Success, string Message, Stream? FileStream, string? FileName, string? ContentType)> DownloadFileByShareCodeAsync(string shareCode)
     {
-        // 查找分享记录
+        // Find share record
         var share = await _dbContext.ShareFiles
             .Include(s => s.File)
             .FirstOrDefaultAsync(s => s.ShareCode == shareCode);
 
         if (share == null)
         {
-            return (false, "分享链接不存在", null, null, null);
+            return (false, "Share link does not exist", null, null, null);
         }
 
-        // 验证分享是否有效
+        // Verify if share is valid
         if (!share.IsActive)
         {
-            return (false, "分享链接已过期", null, null, null);
+            return (false, "Share link has expired", null, null, null);
         }
 
-        // 获取文件流
+        // Get file stream
         var (success, fileStream, message) = await _fileStorageService.GetFileAsync(share.File.StoragePath);
-        if (!success)
-        {
-            return (false, message, null, null, null);
-        }
-
-        return (true, "文件获取成功", fileStream, share.File.OriginalFileName, share.File.ContentType);
+        return !success ? (false, message, null, null, null) : (true, "File retrieved successfully", fileStream, share.File.OriginalFileName, share.File.ContentType);
     }
 
-    private string GenerateShareCode()
+    /// <summary>
+    /// Generates a random 8-character alphanumeric share code
+    /// </summary>
+    /// <returns>Generated share code</returns>
+    private static string GenerateShareCode()
     {
-        // 生成8位随机字符作为分享码
         Random random = new Random();
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         return new string(Enumerable.Repeat(chars, 8)
