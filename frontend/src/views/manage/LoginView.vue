@@ -132,7 +132,14 @@ const showPassword = ref(false)
 
 // 游客访问函数
 const guestAccess = () => {
-  router.push('/retrieve')
+  // 清除任何可能存在的用户认证标记
+  localStorage.removeItem('isUserLoggedIn');
+  localStorage.removeItem('isLoggedIn');
+  localStorage.removeItem('token');
+  localStorage.removeItem('userData');
+  
+  // 直接跳转到取件页面，路由守卫会处理重定向
+  router.push('/retrieve');
 }
 
 const validateEmail = (email: string) => {
@@ -201,6 +208,7 @@ const handleSubmit = async () => {
       // 添加登录标志
       localStorage.setItem('token', 'loggedIn');
       localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('isUserLoggedIn', 'true');
       
       // 使用window.location.href进行硬跳转，避免Vue路由问题
       window.location.href = '/#/send';

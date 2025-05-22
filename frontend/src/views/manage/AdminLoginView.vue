@@ -138,6 +138,11 @@ const handleSubmit = async () => {
   isLoading.value = true;
   
   try {
+    // 清除可能存在的旧凭据
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('token');
+    
     // 使用 api 实例发送管理员登录请求
     const response = await api.post('/api/admin/login', {
       email: email.value,
@@ -149,11 +154,24 @@ const handleSubmit = async () => {
       alertStore.showAlert('管理员登录成功', 'success')
       
       // 存储管理员登录状态
-      localStorage.setItem('adminToken', 'adminLoggedIn')
+      localStorage.setItem('adminToken', response.data?.token || 'adminLoggedIn')
       localStorage.setItem('isAdminLoggedIn', 'true')
       
-      // 跳转到管理面板
-      window.location.href = '/#/admin';
+      // 验证管理员权限
+      try {
+        // 尝试调用一个简单的管理员API来验证凭据
+        await api.get('/api/admin/validate', { 
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+        });
+        
+        // 跳转到管理面板
+        window.location.href = '/#/admin';
+      } catch (validationError) {
+        console.error('验证管理员权限失败:', validationError);
+        alertStore.showAlert('管理员权限验证失败，请重新登录', 'error');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('isAdminLoggedIn');
+      }
     } else {
       // 登录失败
       alertStore.showAlert(response.message || '管理员登录失败，请检查凭据', 'error')

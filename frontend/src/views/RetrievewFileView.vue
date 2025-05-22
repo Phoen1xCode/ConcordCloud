@@ -755,6 +755,7 @@ const logout = async () => {
     // 清除本地登录状态标志
     localStorage.removeItem('token')
     localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('isUserLoggedIn')
     alertStore.showAlert('已成功退出登录', 'success')
     router.push('/login')
   } catch (error) {
@@ -762,6 +763,7 @@ const logout = async () => {
     // 即使API调用失败，也清除本地登录状态
     localStorage.removeItem('token')
     localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('isUserLoggedIn')
     alertStore.showAlert('登出过程中发生错误，但已清除本地登录状态', 'warning')
     router.push('/login')
   }

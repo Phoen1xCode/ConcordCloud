@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref, inject, onMounted, onUnmounted } from 'vue'
 import { HomeIcon, MenuIcon, XIcon, FolderIcon, CogIcon, LayoutDashboardIcon, UsersIcon, LogOutIcon } from 'lucide-vue-next'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
 
@@ -95,6 +95,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
+const route = useRoute()
 const isDarkMode = inject('isDarkMode')
 const alertStore = useAlertStore()
 const menuItems: MenuItem[] = [
@@ -136,27 +137,41 @@ const loadFiles = async () => {
   }
 }
 
-// 组件挂载时执行
+// 在组件挂载时检查认证状态
 onMounted(() => {
-  console.log('管理员布局组件已挂载');
+  // 添加全局API响应拦截器，处理管理员认证错误
+  const interceptor = api.interceptors.response.use(
+    response => response,
+    error => {
+      // 检查是否是管理员路由下的请求
+      if (router.currentRoute.value.path.includes('/admin')) {
+        if (error.response && (error.response.status === 401 || error.response.status === 405)) {
+          console.error('管理员认证失败:', error);
+          // 清除登录状态
+          localStorage.removeItem('isAdminLoggedIn');
+          localStorage.removeItem('adminToken');
+          
+          // 显示提示
+          alertStore.showAlert('管理员会话已过期或认证无效，请重新登录', 'error');
+          
+          // 重定向到登录页面
+          router.push('/admin-login');
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
   
-  // 检查管理员登录状态
-  const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
-  if (!isAdmin) {
-    console.log('检测到未登录状态，但使用硬刷新方式处理');
-  }
-  
-  // 初始化界面
+  // 处理窗口大小变化
   handleResize();
   window.addEventListener('resize', handleResize);
   
-  // 加载数据
-  loadFiles();
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
+  // 在组件卸载时移除拦截器
+  onUnmounted(() => {
+    api.interceptors.response.eject(interceptor);
+    window.removeEventListener('resize', handleResize);
+  });
+});
 
 const handleLogout = async () => {
   // 添加确认对话框
