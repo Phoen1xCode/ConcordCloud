@@ -256,6 +256,28 @@
             <XIcon class="w-6 h-6" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
           </button>
         </div>
+
+        <!-- 文件搜索框 -->
+        <div class="mb-4">
+          <div class="relative">
+            <input type="text" v-model="fileParams.keyword" @keyup.enter="handleFileSearch" 
+              :class="[
+                isDarkMode
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400',
+                'w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+              ]" 
+              placeholder="搜索文件名..." />
+            <SearchIcon class="absolute left-3 top-2.5 w-5 h-5" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']" />
+            <button 
+              @click="handleFileSearch" 
+              class="absolute right-2 top-1.5 px-2 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+            >
+              搜索
+            </button>
+          </div>
+        </div>
+
         <div class="overflow-y-auto flex-1">
           <table class="min-w-full divide-y" :class="[isDarkMode ? 'divide-gray-700' : 'divide-gray-200']">
             <thead :class="[isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50']">
@@ -272,7 +294,7 @@
                 ? 'bg-gray-800/50 divide-y divide-gray-700'
                 : 'bg-white divide-y divide-gray-200'
             ]">
-              <tr v-for="file in userFiles" :key="file.id" class="hover:bg-opacity-50 transition-colors duration-200"
+              <tr v-for="file in displayedUserFiles" :key="file.id" class="hover:bg-opacity-50 transition-colors duration-200"
                 :class="[isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50']">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
@@ -315,13 +337,69 @@
                   </div>
                 </td>
               </tr>
-              <tr v-if="userFiles.length === 0">
+              <tr v-if="displayedUserFiles.length === 0">
                 <td :colspan="fileTableHeaders.length" class="px-6 py-8 text-center" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
                   没有找到文件
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- 文件分页控件 -->
+        <div class="mt-4 flex items-center justify-between pt-4 border-t" :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+          <div class="flex items-center text-sm" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
+            显示第 {{ (fileParams.page - 1) * fileParams.size + 1 }} 到
+            {{ Math.min(fileParams.page * fileParams.size, fileParams.total) }} 条，共 {{ fileParams.total }} 条
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button @click="handleFilePageChange(fileParams.page - 1)" :disabled="fileParams.page === 1"
+              class="inline-flex items-center px-3 py-1.5 rounded-md transition-colors duration-200" :class="[
+                isDarkMode
+                  ? fileParams.page === 1
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : fileParams.page === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ]">
+              <ChevronLeftIcon class="w-4 h-4" />
+              上一页
+            </button>
+
+            <div class="flex items-center space-x-1">
+              <template v-for="pageNum in displayedFilePages" :key="pageNum">
+                <button v-if="pageNum !== '...'" @click="handleFilePageChange(pageNum)"
+                  class="inline-flex items-center px-3 py-1.5 rounded-md transition-colors duration-200" :class="[
+                    fileParams.page === pageNum
+                      ? 'bg-indigo-600 text-white'
+                      : isDarkMode
+                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ]">
+                  {{ pageNum }}
+                </button>
+                <span v-else class="px-2" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-500']">
+                  ...
+                </span>
+              </template>
+            </div>
+
+            <button @click="handleFilePageChange(fileParams.page + 1)" :disabled="fileParams.page >= fileTotalPages"
+              class="inline-flex items-center px-3 py-1.5 rounded-md transition-colors duration-200" :class="[
+                isDarkMode
+                  ? fileParams.page >= fileTotalPages
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : fileParams.page >= fileTotalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ]">
+              下一页
+              <ChevronRightIcon class="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -391,6 +469,13 @@ const confirmPassword = ref('')
 // 用户文件相关
 const showUserFilesModal = ref(false)
 const userFiles = ref<UserFile[]>([])
+const allUserFiles = ref<UserFile[]>([])
+const fileParams = ref({
+  page: 1,
+  size: 5,
+  total: 0,
+  keyword: ''
+})
 
 // 格式化时间戳
 function formatTimestamp(timestamp: string): string {
@@ -475,8 +560,8 @@ const loadUsers = async () => {
       // 如果有搜索关键词，立即应用搜索过滤
       applySearchFilter(params.value.keyword.trim());
     } else {
-      // 否则显示所有数据
-      tableData.value = processedData;
+      // 应用分页 - 只显示当前页的数据
+      applyPagination();
     }
     
   } catch (error: any) {
@@ -489,12 +574,21 @@ const loadUsers = async () => {
   }
 }
 
+// 添加分页实现函数
+const applyPagination = () => {
+  const startIndex = (params.value.page - 1) * params.value.size;
+  const endIndex = startIndex + params.value.size;
+  // 从所有数据中截取当前页的数据
+  tableData.value = allUsers.value.slice(startIndex, endIndex);
+  console.log(`分页: 显示第 ${startIndex+1} 到 ${endIndex} 条，共 ${allUsers.value.length} 条`);
+}
+
 // 前端搜索过滤函数
 const applySearchFilter = (keyword: string) => {
   if (!keyword) {
-    // 如果没有关键词，显示所有用户
-    tableData.value = [...allUsers.value];
-    params.value.total = allUsers.value.length;
+    // 如果没有关键词，显示所有用户（应用分页）
+    params.value.page = 1; // 重置到第一页
+    applyPagination();
     return;
   }
   
@@ -511,9 +605,14 @@ const applySearchFilter = (keyword: string) => {
   
   console.log(`搜索结果: 从 ${allUsers.value.length} 项中过滤出 ${filteredData.length} 项`);
   
-  // 更新表格数据和分页计数
-  tableData.value = filteredData;
+  // 更新总记录数
   params.value.total = filteredData.length;
+  
+  // 应用分页到过滤后的数据
+  const startIndex = (params.value.page - 1) * params.value.size;
+  const endIndex = startIndex + params.value.size;
+  // 从过滤数据中截取当前页的数据
+  tableData.value = filteredData.slice(startIndex, endIndex);
 }
 
 // 页码改变处理函数
@@ -522,11 +621,13 @@ const handlePageChange = async (page: number | string) => {
   if (numPage < 1 || numPage > totalPages.value) return;
   params.value.page = numPage;
   
-  // 如果是搜索状态，不需要重新加载数据
+  // 如果是搜索状态，使用前端分页
   if (params.value.keyword && params.value.keyword.trim() !== '') {
     console.log(`搜索状态切换到第 ${numPage} 页，前端分页`);
+    applySearchFilter(params.value.keyword.trim());
   } else {
-    await loadUsers();
+    // 使用前端分页
+    applyPagination();
   }
 }
 
@@ -539,9 +640,9 @@ const handleSearch = async () => {
     // 有搜索关键词时，在前端过滤
     applySearchFilter(params.value.keyword.trim());
   } else {
-    // 无搜索关键词时，恢复显示所有用户
-    tableData.value = [...allUsers.value];
+    // 无搜索关键词时，恢复显示所有用户（应用分页）
     params.value.total = allUsers.value.length;
+    applyPagination();
   }
 }
 
@@ -695,7 +796,7 @@ const viewUserFiles = async (userId: string) => {
     }
     
     // 处理文件数据
-    userFiles.value = fileData.map((item: any) => {
+    const processedFiles = fileData.map((item: any) => {
       return {
         id: item.id || '',
         filename: item.filename || item.name || item.fileName || '',
@@ -703,6 +804,18 @@ const viewUserFiles = async (userId: string) => {
         uploadedAt: item.uploadedAt || item.uploadAt || item.created_at || item.createdAt || new Date().toISOString()
       };
     });
+    
+    // 保存所有文件数据
+    allUserFiles.value = [...processedFiles];
+    userFiles.value = [...processedFiles];
+    
+    // 设置分页数据
+    fileParams.value = {
+      page: 1,
+      size: 5,
+      total: processedFiles.length,
+      keyword: ''
+    };
     
     showUserFilesModal.value = true;
   } catch (error: any) {
@@ -715,6 +828,13 @@ const viewUserFiles = async (userId: string) => {
 const closeUserFilesModal = () => {
   showUserFilesModal.value = false;
   userFiles.value = [];
+  allUserFiles.value = [];
+  fileParams.value = {
+    page: 1,
+    size: 5,
+    total: 0,
+    keyword: ''
+  };
 }
 
 // 下载文件
@@ -737,6 +857,82 @@ const downloadFile = (file: UserFile) => {
   } catch (error: any) {
     console.error('文件下载失败:', error);
     alertStore.showAlert('文件下载失败', 'error');
+  }
+}
+
+// 计算文件的总页数
+const fileTotalPages = computed(() => Math.ceil(fileParams.value.total / fileParams.value.size))
+
+// 计算显示的文件页码
+const displayedFilePages = computed(() => {
+  const current = fileParams.value.page
+  const total = fileTotalPages.value
+  const delta = 2 // 当前页码前后显示的页码数
+
+  let pages: (number | string)[] = []
+
+  // 始终显示第一页
+  pages.push(1)
+
+  // 计算显示范围
+  let left = Math.max(2, current - delta)
+  let right = Math.min(total - 1, current + delta)
+
+  // 添加省略号和页码
+  if (left > 2) {
+    pages.push('...')
+  }
+
+  for (let i = left; i <= right; i++) {
+    pages.push(i)
+  }
+
+  if (right < total - 1) {
+    pages.push('...')
+  }
+
+  // 始终显示最后一页
+  if (total > 1) {
+    pages.push(total)
+  }
+
+  return pages
+})
+
+// 计算当前显示的用户文件
+const displayedUserFiles = computed(() => {
+  const startIndex = (fileParams.value.page - 1) * fileParams.value.size;
+  const endIndex = startIndex + fileParams.value.size;
+  return userFiles.value.slice(startIndex, endIndex);
+})
+
+// 文件页码切换处理
+const handleFilePageChange = (page: number | string) => {
+  const numPage = typeof page === 'string' ? parseInt(page) : page;
+  if (numPage < 1 || numPage > fileTotalPages.value) return;
+  fileParams.value.page = numPage;
+}
+
+// 文件搜索处理
+const handleFileSearch = () => {
+  fileParams.value.page = 1; // 重置页码到第一页
+  
+  if (fileParams.value.keyword && fileParams.value.keyword.trim() !== '') {
+    const keyword = fileParams.value.keyword.trim().toLowerCase();
+    
+    // 在前端过滤数据
+    const filteredFiles = allUserFiles.value.filter(file => {
+      // 在文件名中搜索关键词
+      return file.filename.toLowerCase().includes(keyword);
+    });
+    
+    // 更新文件列表和总数
+    userFiles.value = filteredFiles;
+    fileParams.value.total = filteredFiles.length;
+  } else {
+    // 没有关键词时显示所有文件
+    userFiles.value = [...allUserFiles.value];
+    fileParams.value.total = allUserFiles.value.length;
   }
 }
 </script>

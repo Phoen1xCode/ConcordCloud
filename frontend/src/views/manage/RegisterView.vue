@@ -35,34 +35,64 @@
         <input type="hidden" name="remember" value="true" />
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
-            <label for="email" class="sr-only">邮箱</label>
-            <input id="email" name="email" type="email" autocomplete="email" required
-              v-model="email" :class="[
+            <label for="username" class="sr-only">用户名</label>
+            <input id="username" name="username" type="username" autocomplete="username" required
+              v-model="username" :class="[
                 'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
                 isDarkMode
                   ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
                   : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+              ]" placeholder="用户名" />
+          </div>
+          <div>
+            <label for="email" class="sr-only">邮箱</label>
+            <input id="email" name="email" type="email" autocomplete="email" required
+              v-model="email" :class="[
+                'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+        isDarkMode
+          ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+          : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
               ]" placeholder="邮箱" />
           </div>
           <div>
             <label for="password" class="sr-only">密码</label>
-            <input id="password" name="password" type="password" autocomplete="new-password" required
+            <div class="relative">
+            <input id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" required
               v-model="password" :class="[
                 'appearance-none relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
                 isDarkMode
                   ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
                   : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
               ]" placeholder="密码" />
+              <button 
+                type="button" 
+                @click="showPassword = !showPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                <EyeIcon v-if="!showPassword" class="h-5 w-5" />
+                <EyeOffIcon v-else class="h-5 w-5" />
+              </button>
+            </div>
           </div>
           <div>
             <label for="confirmPassword" class="sr-only">确认密码</label>
-            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" required
+            <div class="relative">
+            <input id="confirmPassword" name="confirmPassword" :type="showConfirmPassword ? 'text' : 'password'" autocomplete="new-password" required
               v-model="confirmPassword" :class="[
                 'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
                 isDarkMode
                   ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
                   : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
               ]" placeholder="确认密码" />
+              <button 
+                type="button" 
+                @click="showConfirmPassword = !showConfirmPassword"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                <EyeIcon v-if="!showConfirmPassword" class="h-5 w-5" />
+                <EyeOffIcon v-else class="h-5 w-5" />
+              </button>
+              </div>
           </div>
         </div>
         
@@ -94,16 +124,19 @@
 
 <script setup lang="ts">
 import { ref, inject } from 'vue'
-import { UserPlusIcon } from 'lucide-vue-next'
+import { UserPlusIcon, EyeIcon, EyeOffIcon } from 'lucide-vue-next'
 import axios, { AxiosError } from 'axios'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
 import { useRouter } from 'vue-router'
 
 const alertStore = useAlertStore()
+const username=ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
 const isLoading = ref(false)
 const isDarkMode = inject('isDarkMode')
 const router = useRouter()
@@ -115,7 +148,11 @@ const validateEmail = (email: string) => {
 
 const validateForm = () => {
   let isValid = true
-  
+  // 验证用户名（非空）
+if (!username.value.trim()) {
+  alertStore.showAlert('请输入用户名', 'error');
+  isValid = false;
+}
   // 验证邮箱
   if (!email.value) {
     alertStore.showAlert('请输入有效的邮箱', 'error')
@@ -155,6 +192,7 @@ const handleSubmit = async () => {
     
     // 构建请求数据
     const requestData = {
+      username:username.value,
       email: email.value,
       password: password.value,
       confirmPassword: confirmPassword.value

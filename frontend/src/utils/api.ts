@@ -17,10 +17,7 @@ interface ApiResponse<T = any> {
 }
 
 // 从环境变量中获取 API 基础 URL
-const baseURL = 
-  import.meta.env.MODE === 'production'
-    ? import.meta.env.VITE_API_BASE_URL_PROD
-    : import.meta.env.VITE_API_BASE_URL_DEV;
+const baseURL = "http://localhost:5000";
 
 // 确保 baseURL 是一个有效的字符串（避免 undefined）
 const sanitizedBaseURL = typeof baseURL === 'string' ? baseURL : '';

@@ -1,6 +1,15 @@
 <template>
   <div class="min-h-screen flex items-center justify-center p-4 overflow-hidden transition-colors duration-300"
     :class="[isDarkMode ? 'bg-gray-900' : 'bg-gray-50']">
+    <!-- Add user profile button -->
+    <button @click="openUserProfile" 
+      class="fixed bottom-4 left-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105"
+      :class="[isDarkMode ? 'bg-gray-800 text-indigo-400 hover:bg-gray-700' : 'bg-white text-indigo-600 hover:bg-gray-100']"
+      v-if="isLoggedIn">
+      <span>个人资料</span>
+      <UserIcon class="w-5 h-5" />
+    </button>
+    
     <div class="w-full max-w-md relative z-10">
       <div class="rounded-3xl shadow-2xl overflow-hidden border transform transition-all duration-300" :class="[
         isDarkMode
@@ -253,6 +262,128 @@
       <span>退出登录</span>
       <LogOutIcon class="w-5 h-5" />
     </button>
+
+    <!-- User Profile Modal -->
+    <transition name="fade">
+      <div v-if="showUserProfileModal" class="fixed inset-0 flex items-center justify-center z-50">
+        <!-- Background overlay -->
+        <div class="absolute inset-0 bg-black/60 backdrop-filter backdrop-blur-sm" @click="closeUserProfileModal"></div>
+        
+        <!-- Modal content -->
+        <div class="relative p-6 rounded-lg shadow-xl w-full max-w-md"
+          :class="[isDarkMode ? 'bg-gray-800' : 'bg-white']">
+          <button @click="closeUserProfileModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <XIcon class="w-5 h-5" />
+          </button>
+          
+          <h3 class="text-xl font-bold mb-4" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">个人资料</h3>
+          
+          <div v-if="userProfile">
+            <div class="mb-4">
+              <p class="text-sm font-medium" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">用户名</p>
+              <p class="mt-1" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">{{ userProfile.username }}</p>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-sm font-medium" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">邮箱</p>
+              <p class="mt-1" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">{{ userProfile.email }}</p>
+            </div>
+            
+            <div class="border-t mt-6" :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+              <h4 class="text-lg font-medium mt-4 mb-3" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">修改用户名</h4>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  新用户名
+                </label>
+                <input type="text" v-model="usernameForm.newUsername"
+                  class="w-full px-3 py-2 border rounded-md"
+                  :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+              </div>
+              
+              <button @click="updateUsername" class="w-full px-4 py-2 rounded-md font-medium transition-colors duration-300 mb-6"
+                :class="[isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white']"
+                :disabled="isUpdatingUsername">
+                <span v-if="isUpdatingUsername">处理中...</span>
+                <span v-else>更新用户名</span>
+              </button>
+            </div>
+            
+            <div class="border-t" :class="[isDarkMode ? 'border-gray-700' : 'border-gray-200']">
+              <h4 class="text-lg font-medium mt-4 mb-3" :class="[isDarkMode ? 'text-white' : 'text-gray-800']">修改密码</h4>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  当前密码
+                </label>
+                <div class="relative">
+                  <input :type="showCurrentPassword ? 'text' : 'password'" v-model="passwordForm.currentPassword"
+                    class="w-full px-3 py-2 border rounded-md" autocomplete="new-password"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showCurrentPassword = !showCurrentPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none z-20"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showCurrentPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  新密码
+                </label>
+                <div class="relative">
+                  <input :type="showNewPassword ? 'text' : 'password'" v-model="passwordForm.newPassword"
+                    class="w-full px-3 py-2 border rounded-md"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showNewPassword = !showNewPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none z-20"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showNewPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block text-sm font-medium mb-1" :class="[isDarkMode ? 'text-gray-300' : 'text-gray-700']">
+                  确认新密码
+                </label>
+                <div class="relative">
+                  <input :type="showConfirmPassword ? 'text' : 'password'" v-model="passwordForm.confirmPassword"
+                    class="w-full px-3 py-2 border rounded-md"
+                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                  <button 
+                    type="button" 
+                    @click="showConfirmPassword = !showConfirmPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none z-20"
+                    :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                    <EyeIcon v-if="!showConfirmPassword" class="h-5 w-5" />
+                    <EyeOffIcon v-else class="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              <button @click="changePassword" class="w-full px-4 py-2 rounded-md font-medium transition-colors duration-300"
+                :class="[isDarkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white']"
+                :disabled="isUpdatingPassword">
+                <span v-if="isUpdatingPassword">处理中...</span>
+                <span v-else>更新密码</span>
+              </button>
+            </div>
+          </div>
+          
+          <div v-else class="flex justify-center items-center h-40">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2" :class="[isDarkMode ? 'border-blue-400' : 'border-blue-600']"></div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -269,11 +400,15 @@ import {
   LockIcon,
   LogOutIcon,
   UploadIcon,
-  SearchIcon
+  SearchIcon,
+  UserIcon,
+  EyeIcon,
+  EyeOffIcon
 } from 'lucide-vue-next'
 import { useRouter, useRoute } from 'vue-router'
 import { useAlertStore } from '@/stores/alertStore'
 import axios from 'axios'
+import api from '@/utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -373,17 +508,14 @@ const handleSubmit = async () => {
 
   try {
     // 先获取文件元信息
-    const response = await axios.get(`https://localhost:5001/api/file/shared/${shareCode.value}/info`, {
-      validateStatus: status => status < 500,
-      withCredentials: true
-    })
+    const response = await api.get(`/api/file/shared/${shareCode.value}/info`)
 
-    if (response.data && response.data.success) {
+    if (response.success) {
       selectedFile.value = response.data.file
       alertStore.showAlert('文件找到，可以开始下载', 'success')
     } else {
       error.value = true
-      alertStore.showAlert(response.data?.message || '无效的分享码', 'error')
+      alertStore.showAlert(response.message || '无效的分享码', 'error')
     }
   } catch (err) {
     console.error('获取文件信息失败:', err)
@@ -398,7 +530,7 @@ const handleSubmit = async () => {
   }
 }
 
-// 分享码直接下载文件
+// 修复分享码下载文件函数
 const downloadFileByShareCode = async () => {
   if (!shareCode.value) {
     alertStore.showAlert('请输入分享码', 'error')
@@ -408,8 +540,10 @@ const downloadFileByShareCode = async () => {
   isDownloading.value = true
 
   try {
+    // 使用原生axios下载，避免API拦截器处理二进制数据
+    const baseURL = api.defaults.baseURL || 'https://localhost:5001'
     const response = await axios({
-      url: `https://localhost:5001/api/file/shared/${shareCode.value}`,
+      url: `${baseURL}/api/file/shared/${shareCode.value}`,
       method: 'GET',
       responseType: 'blob',
       withCredentials: true
@@ -433,6 +567,7 @@ const downloadFileByShareCode = async () => {
     document.body.appendChild(link)
     link.click()
     link.remove()
+    window.URL.revokeObjectURL(url)  // 释放Blob URL
 
     alertStore.showAlert('文件下载成功', 'success')
   } catch (err) {
@@ -452,15 +587,17 @@ const downloadFileByShareCode = async () => {
   }
 }
 
-// 下载文件
+// 修复下载文件函数
 const downloadFile = async () => {
   if (!selectedFile.value) return
   
   isDownloading.value = true
   
   try {
+    // 使用原生axios下载，避免API拦截器处理二进制数据
+    const baseURL = api.defaults.baseURL || 'https://localhost:5001'
     const response = await axios({
-      url: `https://localhost:5001/api/file/shared/${shareCode.value}`,
+      url: `${baseURL}/api/file/shared/${shareCode.value}`,
       method: 'GET',
       responseType: 'blob',
       withCredentials: true
@@ -474,6 +611,7 @@ const downloadFile = async () => {
     document.body.appendChild(link)
     link.click()
     link.remove()
+    window.URL.revokeObjectURL(url)  // 释放Blob URL
     
     alertStore.showAlert('文件下载成功', 'success')
   } catch (err) {
@@ -497,7 +635,7 @@ const downloadFile = async () => {
   }
 }
 
-// 通过ID下载文件
+// 修复通过ID下载文件函数
 const downloadFileById = async (fileId, fileName) => {
   if (!isLoggedIn.value) {
     alertStore.showAlert('请先登录', 'error')
@@ -507,8 +645,10 @@ const downloadFileById = async (fileId, fileName) => {
   try {
     alertStore.showAlert('开始下载文件...', 'info')
     
+    // 使用原生axios下载，避免API拦截器处理二进制数据
+    const baseURL = api.defaults.baseURL || 'http://localhost:5000'
     const response = await axios({
-      url: `https://localhost:5001/api/file/download/${fileId}`,
+      url: `${baseURL}/api/file/download/${fileId}`,
       method: 'GET',
       responseType: 'blob',
       withCredentials: true
@@ -522,6 +662,7 @@ const downloadFileById = async (fileId, fileName) => {
     document.body.appendChild(link)
     link.click()
     link.remove()
+    window.URL.revokeObjectURL(url)  // 释放Blob URL
     
     alertStore.showAlert('文件下载成功', 'success')
   } catch (err) {
@@ -563,28 +704,19 @@ const toggleDrawer = () => {
 const fetchUserFiles = async () => {
   try {
     isLoadingFiles.value = true
-    const response = await axios.get('https://localhost:5001/api/file', { 
-      withCredentials: true 
-    });
+    const response = await api.get('/api/file')
     
-    // 修改前
-    await axios.get('https://localhost:5001/api/file', { 
-      withCredentials: true 
-    });
-    
-    // 修改后
-    await api.get('/api/file');
-    console.log('获取文件列表响应:', response.data)
-    if (response.data && response.data.success) {
-      if (Array.isArray(response.data.data)) {
-        userFiles.value = response.data.data
-      } else if (response.data.data && Array.isArray(response.data.data.$values)) {
-        userFiles.value = response.data.data.$values
-      } else if (response.data.files) {
-        userFiles.value = response.data.files
+    console.log('获取文件列表响应:', response)
+    if (response.success) {
+      if (Array.isArray(response.data)) {
+        userFiles.value = response.data
+      } else if (response.data && Array.isArray(response.data.$values)) {
+        userFiles.value = response.data.$values
+      } else if (response.files) {
+        userFiles.value = response.files
       } else {
         userFiles.value = []
-        console.warn('文件列表数据格式不正确:', response.data)
+        console.warn('文件列表数据格式不正确:', response)
       }
     } else {
       userFiles.value = []
@@ -616,18 +748,14 @@ const logout = async () => {
   alertStore.showAlert('正在退出登录...', 'info')
   
   try {
-    // 确保axios默认设置包含凭据
-    axios.defaults.withCredentials = true;
-    
     // 调用登出API
-    console.log('Calling logout API at: https://localhost:5001/api/user/logout')
-    await axios.post('https://localhost:5001/api/user/logout', {}, {
-      withCredentials: true // 确保发送认证Cookie
-    })
+    console.log('Calling logout API')
+    await api.post('/api/user/logout')
     
     // 清除本地登录状态标志
     localStorage.removeItem('token')
     localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('isUserLoggedIn')
     alertStore.showAlert('已成功退出登录', 'success')
     router.push('/login')
   } catch (error) {
@@ -635,6 +763,7 @@ const logout = async () => {
     // 即使API调用失败，也清除本地登录状态
     localStorage.removeItem('token')
     localStorage.removeItem('isLoggedIn')
+    localStorage.removeItem('isUserLoggedIn')
     alertStore.showAlert('登出过程中发生错误，但已清除本地登录状态', 'warning')
     router.push('/login')
   }
@@ -649,6 +778,163 @@ onMounted(() => {
 watch(searchQuery, () => {
   filesPagination.value.currentPage = 1
 })
+
+// User profile related states
+const showUserProfileModal = ref(false)
+const userProfile = ref(null)
+const isUpdatingUsername = ref(false)
+const isUpdatingPassword = ref(false)
+
+// Password visibility states
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+// Form data
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const usernameForm = ref({
+  newUsername: ''
+})
+
+// Open user profile modal
+const openUserProfile = async () => {
+  showUserProfileModal.value = true
+  
+  // Reset password form fields when opening the modal
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  
+  await getUserProfile()
+}
+
+// Close user profile modal
+const closeUserProfileModal = () => {
+  showUserProfileModal.value = false
+  passwordForm.value = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+  usernameForm.value = {
+    newUsername: ''
+  }
+}
+
+// Get user profile information
+const getUserProfile = async () => {
+  try {
+    const response = await api.get('/api/user/profile')
+    if (response.success) {
+      userProfile.value = response.data
+      
+      // Reset username form to empty when opening profile
+      usernameForm.value.newUsername = ''
+    } else {
+      alertStore.showAlert('获取用户资料失败', 'error')
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    alertStore.showAlert('获取用户资料失败', 'error')
+  }
+}
+
+// Update username
+const updateUsername = async () => {
+  if (!usernameForm.value.newUsername) {
+    alertStore.showAlert('请输入新用户名', 'error')
+    return
+  }
+
+  if (usernameForm.value.newUsername === userProfile.value.username) {
+    alertStore.showAlert('新用户名不能与当前用户名相同', 'warning')
+    return
+  }
+
+  isUpdatingUsername.value = true
+
+  try {
+    const response = await api.post('/api/user/update-username', {
+      newUsername: usernameForm.value.newUsername
+    })
+
+    if (response.success) {
+      alertStore.showAlert('用户名更新成功', 'success')
+      // Update the profile data
+      userProfile.value.username = usernameForm.value.newUsername
+    } else {
+      alertStore.showAlert(response.message || '用户名更新失败', 'error')
+    }
+  } catch (error) {
+    console.error('Error updating username:', error)
+    
+    let errorMessage = '用户名更新失败，请稍后再试'
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    }
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    isUpdatingUsername.value = false
+  }
+}
+
+// Change password
+const changePassword = async () => {
+  // Validate password
+  if (!passwordForm.value.currentPassword || !passwordForm.value.newPassword || !passwordForm.value.confirmPassword) {
+    alertStore.showAlert('请填写所有密码字段', 'error')
+    return
+  }
+  
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    alertStore.showAlert('两次输入的新密码不一致', 'error')
+    return
+  }
+  
+  if (passwordForm.value.newPassword.length < 6) {
+    alertStore.showAlert('新密码长度至少为6位', 'error')
+    return
+  }
+
+  isUpdatingPassword.value = true
+  
+  try {
+    const response = await api.post('/api/user/change-password', {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+      confirmPassword: passwordForm.value.confirmPassword
+    })
+    
+    if (response.success) {
+      alertStore.showAlert('密码修改成功', 'success')
+      // Reset the form
+      passwordForm.value = {
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
+    } else {
+      alertStore.showAlert(response.message || '密码修改失败', 'error')
+    }
+  } catch (error) {
+    console.error('Error changing password:', error)
+    
+    let errorMessage = '密码修改失败，请稍后再试'
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    }
+    alertStore.showAlert(errorMessage, 'error')
+  } finally {
+    isUpdatingPassword.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -733,3 +1019,4 @@ watch(searchQuery, () => {
   }
 }
 </style>
+

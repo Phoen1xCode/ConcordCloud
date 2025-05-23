@@ -214,7 +214,7 @@
               <button 
                 type="button" 
                 @click="showCurrentPassword = !showCurrentPassword"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none  z-10"
                 :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
                 <EyeIcon v-if="!showCurrentPassword" class="h-5 w-5" />
                 <EyeOffIcon v-else class="h-5 w-5" />
@@ -233,7 +233,7 @@
               <button 
                 type="button" 
                 @click="showNewPassword = !showNewPassword"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none  z-10"
                 :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
                 <EyeIcon v-if="!showNewPassword" class="h-5 w-5" />
                 <EyeOffIcon v-else class="h-5 w-5" />

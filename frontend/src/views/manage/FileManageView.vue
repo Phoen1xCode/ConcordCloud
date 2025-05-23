@@ -307,8 +307,8 @@ const loadFiles = async () => {
       // 如果有搜索关键词，立即应用搜索过滤
       applySearchFilter(params.value.keyword.trim());
     } else {
-      // 否则显示所有数据
-      tableData.value = processedData;
+      // 应用分页 - 只显示当前页的数据
+      applyPagination();
     }
     
   } catch (error: any) {
@@ -321,12 +321,21 @@ const loadFiles = async () => {
   }
 }
 
+// 添加分页实现函数
+const applyPagination = () => {
+  const startIndex = (params.value.page - 1) * params.value.size;
+  const endIndex = startIndex + params.value.size;
+  // 从所有数据中截取当前页的数据
+  tableData.value = allFiles.value.slice(startIndex, endIndex);
+  console.log(`分页: 显示第 ${startIndex+1} 到 ${endIndex} 条，共 ${allFiles.value.length} 条`);
+}
+
 // 前端搜索过滤函数
 const applySearchFilter = (keyword: string) => {
   if (!keyword) {
-    // 如果没有关键词，显示所有文件
-    tableData.value = [...allFiles.value];
-    params.value.total = allFiles.value.length;
+    // 如果没有关键词，显示所有文件（应用分页）
+    params.value.page = 1; // 重置到第一页
+    applyPagination();
     return;
   }
   
@@ -335,19 +344,19 @@ const applySearchFilter = (keyword: string) => {
   const filteredData = allFiles.value.filter((file: any) => {
     // 在多个字段中搜索关键词
     const filename = (file.filename || '').toLowerCase();
- /*   const id = (file.id || '').toLowerCase();
-    const contentType = (file.contentType || '').toLowerCase();*/
-    
     return filename.includes(lowerCaseKeyword);
-          /* id.includes(lowerCaseKeyword) || 
-           contentType.includes(lowerCaseKeyword);*/
   });
   
   console.log(`搜索结果: 从 ${allFiles.value.length} 项中过滤出 ${filteredData.length} 项`);
   
-  // 更新表格数据和分页计数
-  tableData.value = filteredData;
+  // 更新总记录数
   params.value.total = filteredData.length;
+  
+  // 应用分页到过滤后的数据
+  const startIndex = (params.value.page - 1) * params.value.size;
+  const endIndex = startIndex + params.value.size;
+  // 从过滤数据中截取当前页的数据
+  tableData.value = filteredData.slice(startIndex, endIndex);
 }
 
 // 页码改变处理函数
@@ -355,11 +364,13 @@ const handlePageChange = async (page: any) => {
   if (page < 1 || page > totalPages.value) return;
   params.value.page = page;
   
-  // 如果是搜索状态，不需要重新加载数据
+  // 如果是搜索状态，使用前端分页
   if (params.value.keyword && params.value.keyword.trim() !== '') {
     console.log(`搜索状态切换到第 ${page} 页，前端分页`);
+    applySearchFilter(params.value.keyword.trim());
   } else {
-    await loadFiles();
+    // 使用前端分页
+    applyPagination();
   }
 }
 
@@ -372,9 +383,9 @@ const handleSearch = async () => {
     // 有搜索关键词时，在前端过滤
     applySearchFilter(params.value.keyword.trim());
   } else {
-    // 无搜索关键词时，恢复显示所有文件
-    tableData.value = [...allFiles.value];
+    // 无搜索关键词时，恢复显示所有文件（应用分页）
     params.value.total = allFiles.value.length;
+    applyPagination();
   }
 }
 
