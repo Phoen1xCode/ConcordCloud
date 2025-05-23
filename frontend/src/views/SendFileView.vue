@@ -289,7 +289,7 @@
               <span class="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
               <span class="relative z-10 flex items-center justify-center text-lg">
                 <span v-if="isCreatingShare">生成中...</span>
-                <span v-else>生成分享链接</span>
+                <span v-else>生成分享码</span>
               </span>
             </button>
           </div>
@@ -315,12 +315,6 @@
               <ClockIcon class="w-4 h-4" />
               <span>有效期至: {{ formatDate(shareResult.expiresAt) }}</span>
             </div>
-            
-            <button @click="copyRetrieveLink(shareResult.shareCode)"
-              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-              <span>复制取件链接</span>
-              <ClipboardCopyIcon class="w-4 h-4 ml-2" />
-            </button>
           </div>
         </div>
       </div>
@@ -553,8 +547,7 @@ import {
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
-import { useFileDataStore } from '@/stores/fileData'
-import { copyRetrieveLink, copyRetrieveCode } from '@/utils/clipboard'
+import {  copyRetrieveCode } from '@/utils/clipboard'
 import { getStorageUnit } from '@/utils/convert'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
@@ -563,7 +556,6 @@ const config: any = JSON.parse(localStorage.getItem('config') || '{}')
 
 const router = useRouter()
 const isDarkMode = inject('isDarkMode')
-const fileDataStore = useFileDataStore()
 
 const selectedUploadFile = ref<File | null>(null)
 const selectedFile = ref<FileItem | null>(null)
@@ -572,10 +564,10 @@ const uploadProgress = ref(0)
 const showDrawer = ref(false)
 
 const alertStore = useAlertStore()
-const sendRecords = computed(() => fileDataStore.shareData)
+
 
 const fileHash = ref('')
-const baseUrl = window.location.origin + '/#/'
+
 
 // 文件管理相关
 const isLoadingFiles = ref(false)

@@ -1,20 +1,34 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN"> <!-- 改为中文语言 -->
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="/assets/logo_small.png" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"
-    />
-    <meta name="description" content="{{description}}" />
-    <meta name="keywords" content="{{keywords}}" />
-    <meta name="generator" content="FileCodeBox2.2" />
-    <meta name="github" content="https://github.com/vastsa/FileCodeBox" />
-    <title>{{title}}</title>
+    <meta charset="UTF-8">
+    <link rel="icon" href="\src\assets\concordcloud-logo.png" type="image/png"> <!-- 调整图标路径和类型 -->
+    
+    <!-- 移动端适配（简化冗余配置） -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    
+    <!-- SEO 元标签（增加品牌默认值） -->
+    <meta name="description" content="{{description || 'ConcordCloud - 云端协同与文件管理平台'}}">
+    <meta name="keywords" content="{{keywords || '云协同, 文件管理, 团队协作, 数据安全, ConcordCloud'}}">
+    
+    <!-- 站点信息 -->
+    <meta name="generator" content="ConcordCloud v1.0"> <!-- 更新生成器名称 -->
+    <meta name="github" content="https://github.com/Phoen1xCode/ConcordCloud.git"> <!-- 替换为实际仓库地址 -->
+    
+    <!-- 标题优化（品牌前置+页面标题） -->
+    <title>ConcordCloud - 安全高效的云端协作平台</title>
+
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/src/main.ts" as="script">
+    
+    <!-- 兼容现代浏览器特性 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#ffffff"> <!-- 浏览器主题色 -->
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    
+    <!-- 脚本加载优化 -->
+    <script type="module" src="/src/main.ts" defer></script>
   </body>
 </html>
