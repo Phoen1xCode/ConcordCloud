@@ -309,12 +309,6 @@
                 {{ shareResult.shareCode }}
               </p>
             </div>
-            
-            <div class="flex items-center space-x-2 text-sm" 
-              :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-              <ClockIcon class="w-4 h-4" />
-              <span>有效期至: {{ formatDate(shareResult.expiresAt) }}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -547,7 +541,8 @@ import {
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
-import {  copyRetrieveCode } from '@/utils/clipboard'
+import { useFileDataStore } from '@/stores/fileData'
+import { copyRetrieveLink, copyRetrieveCode } from '@/utils/clipboard'
 import { getStorageUnit } from '@/utils/convert'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
@@ -556,6 +551,7 @@ const config: any = JSON.parse(localStorage.getItem('config') || '{}')
 
 const router = useRouter()
 const isDarkMode = inject('isDarkMode')
+const fileDataStore = useFileDataStore()
 
 const selectedUploadFile = ref<File | null>(null)
 const selectedFile = ref<FileItem | null>(null)
@@ -564,10 +560,10 @@ const uploadProgress = ref(0)
 const showDrawer = ref(false)
 
 const alertStore = useAlertStore()
-
+const sendRecords = computed(() => fileDataStore.shareData)
 
 const fileHash = ref('')
-
+const baseUrl = window.location.origin + '/#/'
 
 // 文件管理相关
 const isLoadingFiles = ref(false)

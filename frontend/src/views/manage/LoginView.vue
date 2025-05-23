@@ -31,42 +31,42 @@
           登录
         </h2>
       </div>
-     <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
-  <input type="hidden" name="remember" value="true" />
-  <div class="rounded-md shadow-sm -space-y-px">
-    <div class="rounded-md shadow-sm">
-      <div>
-        <label for="usernameOrEmail" class="sr-only">用户名或邮箱</label>
-        <input id="usernameOrEmail" name="usernameOrEmail" type="text" autocomplete="username email" required
-          v-model="usernameOrEmail" :class="[
-            'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
-            isDarkMode
-             ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-              : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
-          ]" placeholder="用户名或邮箱" />
-      </div>
-      <div>
-        <label for="password" class="sr-only">密码</label>
-        <div class="relative">
-          <input id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required
-            v-model="password" :class="[
-              'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
-              isDarkMode
-               ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-                : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
-            ]" placeholder="密码" />
-          <button 
-            type="button" 
-            @click="showPassword = !showPassword"
-            class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
-            :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
-            <EyeIcon v-if="!showPassword" class="h-5 w-5" />
-            <EyeOffIcon v-else class="h-5 w-5" />
-          </button>
+      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
+        <input type="hidden" name="remember" value="true" />
+        <div class="rounded-md shadow-sm -space-y-px">
+          <div class="rounded-md shadow-sm">
+            <div>
+              <label for="usernameOrEmail" class="sr-only">用户名或邮箱</label>
+              <input id="usernameOrEmail" name="usernameOrEmail" type="text" autocomplete="username email" required
+                v-model="usernameOrEmail" :class="[
+                'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                isDarkMode
+                  ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+                  : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+                ]" placeholder="用户名或邮箱" />
+            </div>
+            <div>
+              <label for="password" class="sr-only">密码</label>
+              <div class="relative">
+                <input id="password" name="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required
+                  v-model="password" :class="[
+                    'appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                    isDarkMode
+                      ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+                      : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+                  ]" placeholder="密码" />
+                <button 
+                  type="button" 
+                  @click="showPassword = !showPassword"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center focus:outline-none"
+                  :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                  <EyeIcon v-if="!showPassword" class="h-5 w-5" />
+                  <EyeOffIcon v-else class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div> <!-- 缺少此结束标签 -->
-  </div> 
         <div>
           <button type="submit" :class="[
             'group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 shadow-lg hover:shadow-cyan-500/50',
