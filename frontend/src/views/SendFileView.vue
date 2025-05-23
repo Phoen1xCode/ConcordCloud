@@ -289,7 +289,7 @@
               <span class="absolute top-0 left-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
               <span class="relative z-10 flex items-center justify-center text-lg">
                 <span v-if="isCreatingShare">生成中...</span>
-                <span v-else>生成分享链接</span>
+                <span v-else>生成分享码</span>
               </span>
             </button>
           </div>
@@ -309,18 +309,6 @@
                 {{ shareResult.shareCode }}
               </p>
             </div>
-            
-            <div class="flex items-center space-x-2 text-sm" 
-              :class="[isDarkMode ? 'text-gray-300' : 'text-gray-600']">
-              <ClockIcon class="w-4 h-4" />
-              <span>有效期至: {{ formatDate(shareResult.expiresAt) }}</span>
-            </div>
-            
-            <button @click="copyRetrieveLink(shareResult.shareCode)"
-              class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors flex items-center justify-center">
-              <span>复制取件链接</span>
-              <ClipboardCopyIcon class="w-4 h-4 ml-2" />
-            </button>
           </div>
         </div>
       </div>
