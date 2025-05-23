@@ -160,7 +160,7 @@ const handleSubmit = async () => {
       // 验证管理员权限
       try {
         // 验证本地存储中的登录状态
-      const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
+        const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
         if (!isAdmin) {
           throw new Error('管理员登录状态无效');
         }
