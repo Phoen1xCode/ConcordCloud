@@ -34,26 +34,17 @@
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <input type="hidden" name="remember" value="true" />
         <div class="rounded-md shadow-sm -space-y-px">
-          <div>
-            <label for="username" class="sr-only">用户名</label>
-            <input id="username" name="username" type="text" autocomplete="username" required
-              v-model="username" :class="[
-                'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
-                isDarkMode
-                   ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-                  : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
-              ]" placeholder="用户名" />
-          </div>
-          <div>
-            <label for="email" class="sr-only">邮箱</label>
-            <input id="email" name="email" type="email" autocomplete="email" required
-              v-model="email" :class="[
-                'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
-                isDarkMode
-                  ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
-                  : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
-              ]" placeholder="邮箱" />
-          </div>
+          <div class="rounded-md shadow-sm">
+         <div>
+          <label for="usernameOrEmail" class="sr-only">用户名或邮箱</label>
+          <input id="usernameOrEmail" name="usernameOrEmail" type="text" autocomplete="username email" required
+             v-model="usernameOrEmail" :class="[
+             'appearance-none rounded-t-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+            isDarkMode
+              ? 'bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 hover:border-gray-500'
+              : 'bg-white/50 border-gray-300 text-gray-900 hover:border-gray-400'
+           ]" placeholder="用户名或邮箱" />
+        </div>
           <div>
             <label for="password" class="sr-only">密码</label>
             <div class="relative">
@@ -122,8 +113,7 @@ import { useAlertStore } from '@/stores/alertStore'
 import { useRouter } from 'vue-router'
 
 const alertStore = useAlertStore()
-const username = ref('')
-const email = ref('')
+const usernameOrEmail = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const isDarkMode = inject('isDarkMode')
@@ -132,13 +122,7 @@ const showPassword = ref(false)
 
 // 游客访问函数
 const guestAccess = () => {
-  // 清除任何可能存在的用户认证标记
-  localStorage.removeItem('isUserLoggedIn');
-  localStorage.removeItem('isLoggedIn');
-  localStorage.removeItem('token');
-  localStorage.removeItem('userData');
-  
-  // 直接跳转到取件页面，路由守卫会处理重定向
+  // 直接跳转到取件页面
   router.push('/retrieve');
 }
 
@@ -149,17 +133,17 @@ const validateEmail = (email: string) => {
 
 const validateForm = () => {
   let isValid = true
-  // 验证用户名（非空）
-  if (!username.value.trim()) {
-    alertStore.showAlert('请输入用户名', 'error');
+    // 验证用户名或邮箱（非空）
+  if (!usernameOrEmail.value.trim()) {
+    alertStore.showAlert('请输入用户名或邮箱', 'error');
     isValid = false;
-  }
-  if (!email.value) {
-    alertStore.showAlert('请输入有效的邮箱', 'error')
-    isValid = false
-  } else if (!validateEmail(email.value)) {
-    alertStore.showAlert('请输入有效的邮箱地址', 'error')
-    isValid = false
+  } else {
+    // 检查是否是邮箱格式
+    const isEmail = validateEmail(usernameOrEmail.value);
+    if (isEmail && !validateEmail(usernameOrEmail.value)) {
+      alertStore.showAlert('请输入有效的邮箱地址', 'error');
+      isValid = false;
+    }
   }
   if (!password.value) {
     alertStore.showAlert('无效的密码', 'error')
@@ -170,7 +154,11 @@ const validateForm = () => {
   }
   return isValid
 }
-
+interface LoginRequest {
+  password: string;
+  email?: string;
+  username?: string;
+}
 const handleSubmit = async () => {
   if (!validateForm()) {
     console.log('表单验证未通过');
@@ -180,12 +168,21 @@ const handleSubmit = async () => {
   try {
     console.log('开始发送登录请求');
     
-    // 构建请求数据
-    const requestData = {
-      username: username.value,
-      email: email.value,
+      // 判断输入的是用户名还是邮箱
+    const isEmail = validateEmail(usernameOrEmail.value);
+    
+   // 使用接口定义请求数据
+    const requestData: LoginRequest = {
       password: password.value
     };
+    
+    if (isEmail) {
+      requestData.email = usernameOrEmail.value;
+      requestData.username = '';
+    } else {
+      requestData.username = usernameOrEmail.value;
+      requestData.email = '';
+    }
     console.log('请求数据:', requestData);
     
     // 使用 api 实例发送请求

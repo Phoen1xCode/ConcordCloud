@@ -159,11 +159,11 @@ const handleSubmit = async () => {
       
       // 验证管理员权限
       try {
-        // 尝试调用一个简单的管理员API来验证凭据
-        await api.get('/api/admin/validate', { 
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
-        });
-        
+        // 验证本地存储中的登录状态
+      const isAdmin = localStorage.getItem('isAdminLoggedIn') === 'true';
+        if (!isAdmin) {
+          throw new Error('管理员登录状态无效');
+        }
         // 跳转到管理面板
         window.location.href = '/#/admin';
       } catch (validationError) {

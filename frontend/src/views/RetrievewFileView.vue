@@ -117,13 +117,17 @@
               去上传文件
               <UploadIcon class="w-4 h-4 ml-1" />
             </router-link>
-            <button
-              v-if="!isLoggedIn"
-              @click="router.push('/login')"
-              class="mt-4 w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-105"
-            >
-              返回登录界面
-            </button>
+            <div v-if="!isLoggedIn" class="mt-4 flex flex-col gap-3">
+              <button
+                @click="router.push('/login')"
+                class="w-full bg-gradient-to-r from-indigo-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-105"
+              >
+                登录账户
+              </button>
+              <p class="text-sm" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
+                登录后可以上传和管理您的文件
+              </p>
+            </div>
           </div>
         </div>
         
