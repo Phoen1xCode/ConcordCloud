@@ -26,7 +26,6 @@ const router = createRouter({
       path: '/retrieve',
       name: 'Retrieve',
       component: () => import('@/views/RetrievewFileView.vue'),
-      meta: { requiresAuth: true }
     },
     {
       path: '/send',
