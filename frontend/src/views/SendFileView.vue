@@ -180,7 +180,7 @@
             </div>
           </transition-group>
           <!-- Add pagination controls -->
-          <div class="mt-6 flex justify-center" v-if="filteredFiles.length > filesPagination.pageSize">
+          <div class="mt-6 flex justify-center">
             <button @click="changePage(filesPagination.currentPage - 1)"
               :disabled="filesPagination.currentPage === 1"
               class="px-4 py-2 rounded-lg font-medium transition duration-300 border"
@@ -528,7 +528,6 @@ import {
   XIcon,
   TrashIcon,
   FileIcon,
-  ClockIcon,
   ShieldCheckIcon,
   ClipboardCopyIcon,
   LogOutIcon,
@@ -541,8 +540,7 @@ import {
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BorderProgressBar from '@/components/common/BorderProgressBar.vue'
-import { useFileDataStore } from '@/stores/fileData'
-import { copyRetrieveLink, copyRetrieveCode } from '@/utils/clipboard'
+import {copyRetrieveCode } from '@/utils/clipboard'
 import { getStorageUnit } from '@/utils/convert'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
@@ -551,7 +549,6 @@ const config: any = JSON.parse(localStorage.getItem('config') || '{}')
 
 const router = useRouter()
 const isDarkMode = inject('isDarkMode')
-const fileDataStore = useFileDataStore()
 
 const selectedUploadFile = ref<File | null>(null)
 const selectedFile = ref<FileItem | null>(null)
@@ -560,10 +557,10 @@ const uploadProgress = ref(0)
 const showDrawer = ref(false)
 
 const alertStore = useAlertStore()
-const sendRecords = computed(() => fileDataStore.shareData)
+
 
 const fileHash = ref('')
-const baseUrl = window.location.origin + '/#/'
+
 
 // 文件管理相关
 const isLoadingFiles = ref(false)
@@ -789,18 +786,6 @@ const handleSubmit = async () => {
     uploadProgress.value = 0
   }
 }
-
-// 定义响应类型以解决类型检查问题
-interface UploadResponse {
-  code: number;
-  detail: {
-    code: string;
-    name: string;
-    expiresAt?: string;
-    message?: string;
-  };
-}
-
 // 定义文件类型接口
 interface FileItem {
   id: string;
