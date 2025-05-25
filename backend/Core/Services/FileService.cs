@@ -200,7 +200,7 @@ public class FileService : IFileService
     /// <param name="userId">ID of the user creating the share</param>
     /// <param name="shareDto">DTO containing share details</param>
     /// <returns>Share result with code and expiration details</returns>
-    public async Task<FileShareResultDto> CreateFileShareAsync(Guid userId, FileShareDto shareDto)
+    public async Task<FileShareResultDto>? CreateFileShareAsync(Guid userId, FileShareDto shareDto)
     {   
         // Find the file
         var file = await _dbContext.Files
