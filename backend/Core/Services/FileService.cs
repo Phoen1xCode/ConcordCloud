@@ -200,7 +200,7 @@ public class FileService : IFileService
     /// <param name="userId">ID of the user creating the share</param>
     /// <param name="shareDto">DTO containing share details</param>
     /// <returns>Share result with code and expiration details</returns>
-    public async Task<FileShareResultDto> CreateFileShareAsync(Guid userId, FileShareDto shareDto)
+    public async Task<FileShareResultDto>? CreateFileShareAsync(Guid userId, FileShareDto shareDto)
     {   
         // Find the file
         var file = await _dbContext.Files
@@ -342,7 +342,7 @@ public class FileService : IFileService
     /// <returns>Generated share code</returns>
     private static string GenerateShareCode()
     {
-        Random random = new Random();
+        Random random = new();
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         return new string(Enumerable.Repeat(chars, 8)
             .Select(s => s[random.Next(s.Length)]).ToArray());

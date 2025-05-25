@@ -83,16 +83,6 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="[
-                    user.isActive 
-                      ? (isDarkMode ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-800')
-                      : (isDarkMode ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-800')
-                  ]">
-                  {{ user.isActive ? '活跃' : '禁用' }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
                 <span class="text-sm" :class="[isDarkMode ? 'text-gray-400' : 'text-gray-600']">
                   {{ formatTimestamp(user.createdAt) }}
                 </span>
@@ -206,7 +196,8 @@
             id="new-password"
             v-model="newPassword"
             class="w-full px-3 py-2 border rounded-md"
-            :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900']"
+            :class="['appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+            isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900']"
             placeholder="输入新密码"
           />
         </div>
@@ -219,7 +210,8 @@
             id="confirm-password"
             v-model="confirmPassword"
             class="w-full px-3 py-2 border rounded-md"
-            :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900']"
+            :class="['appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+            isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900']"
             placeholder="再次输入新密码"
           />
         </div>
@@ -430,7 +422,6 @@ interface User {
   id: string;
   username: string;
   email: string;
-  isActive: boolean;
   createdAt: string;
   [key: string]: any; // For any additional fields
 }
@@ -547,7 +538,6 @@ const loadUsers = async () => {
         id: item.id || '',
         username: item.username || item.userName || item.name || '',
         email: item.email || item.emailAddress || '',
-        isActive: item.isActive !== false, // 默认为活跃状态
         createdAt: item.createdAt || item.created_at || new Date().toISOString()
       };
     });

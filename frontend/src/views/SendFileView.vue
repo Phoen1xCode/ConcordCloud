@@ -443,7 +443,8 @@
                 <div class="relative">
                   <input :type="showCurrentPassword ? 'text' : 'password'" v-model="passwordForm.currentPassword"
                     class="w-full px-3 py-2 border rounded-md" autocomplete="new-password"
-                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                    :class="['appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                    isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
                   <button 
                     type="button" 
                     @click="showCurrentPassword = !showCurrentPassword"
@@ -462,7 +463,8 @@
                 <div class="relative">
                   <input :type="showNewPassword ? 'text' : 'password'" v-model="passwordForm.newPassword"
                     class="w-full px-3 py-2 border rounded-md"
-                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                    :class="['appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                    isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
                   <button 
                     type="button" 
                     @click="showNewPassword = !showNewPassword"
@@ -481,7 +483,8 @@
                 <div class="relative">
                   <input :type="showConfirmPassword ? 'text' : 'password'" v-model="passwordForm.confirmPassword"
                     class="w-full px-3 py-2 border rounded-md"
-                    :class="[isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
+                    :class="['appearance-none rounded-b-md relative block w-full px-4 py-3 border transition-all duration-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 focus:z-10 sm:text-sm backdrop-blur-sm',
+                    isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800']">
                   <button 
                     type="button" 
                     @click="showConfirmPassword = !showConfirmPassword"
