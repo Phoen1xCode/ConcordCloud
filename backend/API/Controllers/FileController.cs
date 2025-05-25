@@ -63,23 +63,20 @@ public class FileController : ControllerBase
             return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
 
-        using (var stream = file.OpenReadStream())
+        using var stream = file.OpenReadStream();
+        var result = await _fileService.UploadFileAsync(
+            userId,
+            file.FileName, 
+            file.ContentType,
+            file.Length,
+            stream);
+
+        if (!result.Success)
         {
-            var result = await _fileService.UploadFileAsync(
-                userId,
-                file.FileName, // Service layer should handle sanitization if needed
-                file.ContentType,
-                file.Length,
-                stream);
-
-            if (!result.Success)
-            {
-                // Consider logging the error message here
-                return ApiResponse<object>.BadRequest(result.Message).ToActionResult();
-            }
-
-            return ApiResponse<object>.Created(result.File, result.Message).ToActionResult();
+            return ApiResponse<object>.BadRequest(result.Message).ToActionResult();
         }
+
+        return ApiResponse<object>.Created(result.File, result.Message).ToActionResult();
     }
 
     [HttpDelete("{id}")]
