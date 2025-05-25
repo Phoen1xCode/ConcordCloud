@@ -342,7 +342,7 @@ public class FileService : IFileService
     /// <returns>Generated share code</returns>
     private static string GenerateShareCode()
     {
-        Random random = new Random();
+        Random random = new();
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         return new string(Enumerable.Repeat(chars, 8)
             .Select(s => s[random.Next(s.Length)]).ToArray());
