@@ -761,7 +761,8 @@ const resetUserPassword = async () => {
       url: `/api/admin/users/${selectedUserId.value}/reset-password`,
       method: 'post',
       data: {
-        newPassword: newPassword.value
+        newPassword: newPassword.value,
+        confirmPassword:confirmPassword.value 
       }
     })
     closeResetPasswordModal()
