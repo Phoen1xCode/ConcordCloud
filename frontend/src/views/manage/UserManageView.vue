@@ -538,7 +538,6 @@ const loadUsers = async () => {
         id: item.id || '',
         username: item.username || item.userName || item.name || '',
         email: item.email || item.emailAddress || '',
-        isActive: item.isActive !== false, // 默认为活跃状态
         createdAt: item.createdAt || item.created_at || new Date().toISOString()
       };
     });

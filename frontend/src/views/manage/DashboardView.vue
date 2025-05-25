@@ -342,14 +342,6 @@ const formatUptime = (milliseconds: number) => {
   return `${days}天${remainingHours}小时${remainingMinutes}分`
 }
 
-// 旧函数保留用于其他地方
-const getSysUptime = (startTimestamp: number) => {
-  const now = new Date().getTime()
-  const uptime = now - startTimestamp
-  const days = Math.floor(uptime / (24 * 60 * 60 * 1000))
-  const hours = Math.floor((uptime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
-  return `${days}天${hours}小时`
-}
 
 const getLocalstorageUsed = (nowUsedBit: string) => {
   const kb = parseInt(nowUsedBit) / 1024
