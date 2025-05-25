@@ -74,12 +74,10 @@ public class LocalFileStorage : IFileStorageService
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);
-                return Task.FromResult(true); 
+                return Task.FromResult(true);
             }
-            else
-            {
-                return Task.FromResult(false); 
-            }
+            
+            return Task.FromResult(false);
         }
         catch (Exception)
         {
