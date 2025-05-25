@@ -96,14 +96,12 @@ import { ShieldIcon, EyeIcon, EyeOffIcon } from 'lucide-vue-next'
 import { AxiosError } from 'axios'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
-import { useRouter } from 'vue-router'
 
 const alertStore = useAlertStore()
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const isDarkMode = inject('isDarkMode')
-const router = useRouter()
 const showPassword = ref(false)
 
 const validateEmail = (email: string) => {
