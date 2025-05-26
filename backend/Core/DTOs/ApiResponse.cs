@@ -7,8 +7,8 @@ namespace ConcordCloud.Core.DTOs;
 public class ApiResponse<T>
 {
     public bool Success { get; set; }
-    public string Message { get; set; }
-    public T Data { get; set; }
+    public string? Message { get; set; }
+    public T? Data { get; set; }
     public int StatusCode { get; set; }
 
     public ApiResponse() {}
@@ -34,27 +34,27 @@ public class ApiResponse<T>
 
     public static ApiResponse<T> BadRequest(string message = "Bad Request")
     {
-        return new ApiResponse<T>(false, message, default, (int)HttpStatusCode.BadRequest);
+        return new ApiResponse<T>(false, message, default!, (int)HttpStatusCode.BadRequest);
     }
 
     public static ApiResponse<T> NotFound(string message = "Not Found")
     {
-        return new ApiResponse<T>(false, message, default, (int)HttpStatusCode.NotFound);
+        return new ApiResponse<T>(false, message, default!, (int)HttpStatusCode.NotFound);
     }
 
     public static ApiResponse<T> Unauthorized(string message = "Unauthorized")
     {
-        return new ApiResponse<T>(false, message, default, (int)HttpStatusCode.Unauthorized);
+        return new ApiResponse<T>(false, message, default!, (int)HttpStatusCode.Unauthorized);
     }
 
     public static ApiResponse<T> Forbidden(string message = "Forbidden")
     {
-        return new ApiResponse<T>(false, message, default, (int)HttpStatusCode.Forbidden);
+        return new ApiResponse<T>(false, message, default!, (int)HttpStatusCode.Forbidden);
     }
 
     public static ApiResponse<T> Error(string message, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
     {
-        return new ApiResponse<T>(false, message, default, (int)statusCode);
+        return new ApiResponse<T>(false, message, default!, (int)statusCode);
     }
 
     public ObjectResult ToActionResult()

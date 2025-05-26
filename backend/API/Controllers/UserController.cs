@@ -35,6 +35,11 @@ public class UserController : ControllerBase
             return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
+        if (user == null)
+        {
+            return ApiResponse<object>.BadRequest("User registration failed: no user data returned").ToActionResult();
+        }
+
         return ApiResponse<object>.Created(user, message).ToActionResult();
     }
 
@@ -51,6 +56,11 @@ public class UserController : ControllerBase
         if (!success)
         {
             return ApiResponse<object>.Unauthorized(message).ToActionResult();
+        }
+
+        if (user == null)
+        {
+            return ApiResponse<object>.BadRequest("Login failed: no user data returned").ToActionResult();
         }
 
         // Create authentication cookie

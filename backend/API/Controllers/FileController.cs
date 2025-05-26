@@ -47,16 +47,12 @@ public class FileController : ControllerBase
 
     [HttpPost("upload")]
     [Authorize]
-    [RequestSizeLimit(100 * 1024 * 1024)] // Example: Limit uploads to 100 MB
-    [RequestFormLimits(MultipartBodyLengthLimit = 100 * 1024 * 1024)]
     public async Task<IActionResult> UploadFile(IFormFile file)
     {
         if (file == null || file.Length == 0)
         {
             return ApiResponse<object>.BadRequest("Please select a file to upload").ToActionResult();
         }
-        // Add file size check here if needed, although RequestSizeLimit helps
-        // if (file.Length > YOUR_MAX_SIZE_IN_BYTES) { ... }
 
         if (!TryGetUserId(out var userId))
         {
@@ -73,10 +69,15 @@ public class FileController : ControllerBase
 
         if (!result.Success)
         {
-            return ApiResponse<object>.BadRequest(result.Message).ToActionResult();
+            return ApiResponse<object>.BadRequest(result.Message ?? "Upload failed").ToActionResult();
         }
 
-        return ApiResponse<object>.Created(result.File, result.Message).ToActionResult();
+        if (result.File == null)
+        {
+            return ApiResponse<object>.BadRequest("File upload failed: no file data returned").ToActionResult();
+        }
+
+        return ApiResponse<object>.Created(result.File, result.Message ?? "File uploaded successfully").ToActionResult();
     }
 
     [HttpDelete("{id}")]
@@ -91,7 +92,6 @@ public class FileController : ControllerBase
 
         if (!success)
         {
-            // Determine if it's a permission issue or file not found
             if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
             {
                 return ApiResponse<object>.NotFound(message).ToActionResult();
@@ -115,6 +115,7 @@ public class FileController : ControllerBase
         {
             return ApiResponse<object>.BadRequest("Invalid user identifier").ToActionResult();
         }
+        
         var (success, message, file) = await _fileService.RenameFileAsync(userId, renameDto);
 
         if (!success)
@@ -124,6 +125,11 @@ public class FileController : ControllerBase
                 return ApiResponse<object>.NotFound(message).ToActionResult();
             }
             return ApiResponse<object>.BadRequest(message).ToActionResult();
+        }
+
+        if (file == null)
+        {
+            return ApiResponse<object>.BadRequest("File data is null").ToActionResult();
         }
 
         return ApiResponse<object>.Ok(file, message).ToActionResult();
@@ -144,7 +150,7 @@ public class FileController : ControllerBase
         }
         var result = await _fileService.CreateFileShareAsync(userId, shareDto);
 
-        if (result == null) // Assuming null indicates failure (e.g., file not found or permission denied)
+        if (result == null)
         {
             return ApiResponse<object>.NotFound("File not found or no permission to share").ToActionResult();
         }
@@ -171,9 +177,12 @@ public class FileController : ControllerBase
             return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        // IMPORTANT: Ensure the fileStream is disposed correctly after the response is sent.
-        // FileStreamResult handles this automatically.
-        return File(fileStream, contentType, fileName);
+        if (fileStream == null)
+        {
+            return ApiResponse<object>.BadRequest("File stream is null").ToActionResult();
+        }
+
+        return File(fileStream, contentType ?? "application/octet-stream", fileName);
     }
 
     [HttpGet("shared/{shareCode}")]
@@ -196,6 +205,11 @@ public class FileController : ControllerBase
             return ApiResponse<object>.BadRequest(message).ToActionResult();
         }
 
-        return File(fileStream, contentType, fileName);
+        if (fileStream == null)
+        {
+            return ApiResponse<object>.BadRequest("File stream is null").ToActionResult();
+        }
+
+        return File(fileStream, contentType ?? "application/octet-stream", fileName);
     }
 }

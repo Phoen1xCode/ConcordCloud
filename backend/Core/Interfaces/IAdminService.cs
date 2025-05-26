@@ -27,7 +27,7 @@ namespace ConcordCloud.Core.Interfaces
         // 统计数据
         Task<PlatformStatisticsDto> GetPlatformStatisticsAsync();
         
-        // 初始化管理员账号（如果不存在）
+        // 初始化管理员账号
         Task<(bool Success, string Message)> InitializeDefaultAdminAsync(AdminCreateDto adminDto);
     }
 } 
