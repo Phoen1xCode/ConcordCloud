@@ -49,8 +49,7 @@ public class LocalFileStorage : IFileStorageService
 
             if (!File.Exists(fullPath))
             {
-                return Task.FromResult<(bool Success, Stream? FileStream, string Message)>((false, null, "File does not exist.")); ;
-            }
+                return Task.FromResult<(bool Success, Stream? FileStream, string Message)>((false, null, "File does not exist."));             }
 
             var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
             return Task.FromResult<(bool Success, Stream? FileStream, string Message)>((true, fileStream, "File retrieval successfully."));
@@ -75,12 +74,10 @@ public class LocalFileStorage : IFileStorageService
             if (File.Exists(fullPath))
             {
                 File.Delete(fullPath);
-                return Task.FromResult(true); 
+                return Task.FromResult(true);
             }
-            else
-            {
-                return Task.FromResult(false); 
-            }
+            
+            return Task.FromResult(false);
         }
         catch (Exception)
         {
