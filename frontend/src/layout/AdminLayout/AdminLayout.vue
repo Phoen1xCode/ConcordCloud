@@ -82,8 +82,8 @@
 
 <script setup lang="ts">
 import { ref, inject, onMounted, onUnmounted } from 'vue'
-import { HomeIcon, MenuIcon, XIcon, FolderIcon, CogIcon, LayoutDashboardIcon, UsersIcon, LogOutIcon } from 'lucide-vue-next'
-import { useRouter, useRoute } from 'vue-router'
+import { HomeIcon, MenuIcon, XIcon, FolderIcon, LayoutDashboardIcon, UsersIcon, LogOutIcon } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
 
@@ -95,7 +95,7 @@ interface MenuItem {
 }
 
 const router = useRouter()
-const route = useRoute()
+
 const isDarkMode = inject('isDarkMode')
 const alertStore = useAlertStore()
 const menuItems: MenuItem[] = [
@@ -118,24 +118,24 @@ const handleResize = () => {
   }
 }
 
-// 分页参数
-const params = ref({
-  page: 1,
-  size: 10,
-  total: 0
-})
+// // 分页参数
+// const params = ref({
+//   page: 1,
+//   size: 10,
+//   total: 0
+// })
 
-// 加载文件列表
-const loadFiles = async () => {
-  try {
-    params.value.total = 85
-    // 更新文件列表数据...
-    console.log('管理员界面: 文件数据加载完成');
-  } catch (error) {
-    console.error('加载文件列表失败:', error)
-    // 处理错误...
-  }
-}
+// // 加载文件列表
+// const loadFiles = async () => {
+//   try {
+//     params.value.total = 85
+//     // 更新文件列表数据...
+//     console.log('管理员界面: 文件数据加载完成');
+//   } catch (error) {
+//     console.error('加载文件列表失败:', error)
+//     // 处理错误...
+//   }
+// }
 
 // 在组件挂载时检查认证状态
 onMounted(() => {

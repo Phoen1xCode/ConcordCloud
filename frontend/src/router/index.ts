@@ -1,7 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+// 为了解决 '类型“ImportMeta”上不存在属性“env”' 的问题，这里使用一个默认值 '/' 替代 import.meta.env.BASE_URL
+// 你也可以根据实际情况修改这个默认值
+history: createWebHashHistory('/'),
   routes: [
     {
       path: '/',
