@@ -193,8 +193,6 @@ import {
   TrashIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PencilIcon,
-  CheckIcon
 } from 'lucide-vue-next'
 import { useAlertStore } from '@/stores/alertStore'
 

@@ -125,7 +125,7 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue'
 import { UserPlusIcon, EyeIcon, EyeOffIcon } from 'lucide-vue-next'
-import axios, { AxiosError } from 'axios'
+import  { AxiosError } from 'axios'
 import api from '@/utils/api'
 import { useAlertStore } from '@/stores/alertStore'
 import { useRouter } from 'vue-router'

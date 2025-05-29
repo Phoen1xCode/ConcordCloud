@@ -3,7 +3,8 @@
  */
 
 import { useAlertStore } from '@/stores/alertStore'
-const alertStore = useAlertStore();
+// 由于 alertStore 未被使用，移除该声明以解决警告
+// const alertStore = useAlertStore();
 interface CopyOptions {
   successMsg?: string
   errorMsg?: string

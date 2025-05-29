@@ -57,7 +57,7 @@ watchEffect(() => {
   document.documentElement.classList.toggle('dark', isDarkMode.value)
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((_, __, next) => {
   isLoading.value = true
   next()
 })
@@ -87,7 +87,8 @@ provide('isLoading', isLoading)
   </div>
 </template>
 
-<style>
+<style lang="postcss">
+
 .app-container {
   min-height: 100vh;
   width: 100%;
@@ -95,11 +96,13 @@ provide('isLoading', isLoading)
 }
 
 .light {
-  @apply bg-gradient-to-br from-blue-50 via-indigo-50 to-white;
+/* 移除 @apply 指令，手动实现渐变样式 */
+background-image: linear-gradient(to bottom right, #eff6ff, #eef2ff, #ffffff);
 }
 
 .dark {
-  @apply bg-gradient-to-br from-gray-900 via-indigo-900 to-black;
+/* 移除 @apply 指令，手动实现渐变样式 */
+background-image: linear-gradient(to bottom right, #111827, #312e81, #000000);
 }
 
 .fade-enter-active,
